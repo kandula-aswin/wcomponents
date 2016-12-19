@@ -1,28 +1,27 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.common.aria.live.xsl"/>
 	<xsl:import href="wc.ui.panel.n.WPanelContainerElement.xsl"/>
-	<xsl:import href="wc.ui.panel.n.WPanelAdditionalClass.xsl"/>
+	<xsl:import href="wc.ui.panel.n.WPanelClass.xsl"/>
 	<xsl:import href="wc.ui.panel.n.WPanelVisiblePanelTitle.xsl"/>
 	<xsl:import href="wc.ui.panel.n.WPanelContentPrep.xsl"/>
 	<xsl:import href="wc.common.hide.xsl"/>
 	<!--
 		WPanel is the basic layout component in the framework. Genreally output as
 		a "block" container (usually div).
-	
+
 		Child elements
 		optional ui:margin and exactly one of:
-			* ui:borderLayout
-			* ui:columnLayout
+			* ui:borderlayout
+			* ui:columnlayout
 			* ui:content
-			* ui:flowLayout
-			* ui:gridLayout
-			* ui:listLayout
+			* ui:flowlayout
+			* ui:gridlayout
+			* ui:listlayout
 	-->
 	<xsl:template match="ui:panel">
+		<xsl:param name="type" select="@type"/>
 		<xsl:variable name="id" select="@id"/>
-		<xsl:variable name="type" select="@type"/>
-		<xsl:variable name="mode" select="@mode"/>
-		
+
 		<xsl:variable name="containerElement">
 			<xsl:call-template name="WPanelContainerElement"/>
 		</xsl:variable>
@@ -31,46 +30,27 @@
 				<xsl:value-of select="$id"/>
 			</xsl:attribute>
 			<xsl:attribute name="class">
-				<xsl:text>panel</xsl:text>
-				<xsl:if test="$type">
-					<xsl:value-of select="concat(' ',$type)"/>
-				</xsl:if>
-				<xsl:if test="($mode='lazy' and @hidden=$t) or $mode='dynamic'">
-					<xsl:text> wc_magic</xsl:text>
-					<xsl:if test="$mode='dynamic'">
-						<xsl:text> wc_dynamic</xsl:text>
-					</xsl:if>
-				</xsl:if>
-				<xsl:if test="@class">
-					<xsl:value-of select="concat(' ', @class)"/>
-				</xsl:if>
-				<xsl:call-template name="WPanelAdditionalClass"/>
+				<xsl:call-template name="WPanelClass">
+					<xsl:with-param name="type" select="$type"/>
+				</xsl:call-template>
 			</xsl:attribute>
 			<xsl:if test="@buttonId">
-				<xsl:attribute name="${wc.common.attribute.button}">
+				<xsl:attribute name="data-wc-submit">
 					<xsl:value-of select="@buttonId"/>
 				</xsl:attribute>
 			</xsl:if>
-			<xsl:if test="$type ='header'">
+			<xsl:if test="$type eq 'header'">
 				<xsl:attribute name="role">
 					<xsl:text>banner</xsl:text>
 				</xsl:attribute>
 			</xsl:if>
-			<xsl:if test="$mode or key('targetKey',$id) or parent::ui:ajaxTarget[@action='replace']">
+			<xsl:if test="@mode or key('targetKey',$id) or parent::ui:ajaxtarget[@action eq 'replace']">
 				<xsl:call-template name="setARIALive"/>
-				<xsl:if test="$mode">
-					<xsl:attribute name="data-wc-ajaxalias">
-						<xsl:value-of select="$id"/>
-					</xsl:attribute>
-				</xsl:if>
 			</xsl:if>
 			<xsl:call-template name="hideElementIfHiddenSet"/>
-			<xsl:apply-templates select="ui:margin"/>
-			<xsl:if test="*[not(self::ui:margin)]/node() or not($mode='eager')">
+			<xsl:if test="*[not(self::ui:margin)]/node() or not(@mode eq 'eager')">
 				<!-- WPanelVisiblePanelTitle template outputs a visible title, not a title attribute -->
-				<xsl:call-template name="WPanelVisiblePanelTitle">
-					<xsl:with-param name="type" select="$type"/>
-				</xsl:call-template>
+				<xsl:call-template name="WPanelVisiblePanelTitle"/>
 				<!--
 					We have split out preping the child elements into a helper template
 					so that implementations can easily override the way templates are

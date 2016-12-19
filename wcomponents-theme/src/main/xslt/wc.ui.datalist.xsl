@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<!--
 		This is a transform for the output of WDataListServlet. This component is
 		designed to allow AJAX loading of HTML SELECT elements using a HTML5 DATALIST.
@@ -13,8 +13,8 @@
 		child elements: ui:option
 	-->
 	<xsl:template match="ui:datalist">
-		<xsl:element name="select">
+		<select>
 			<xsl:apply-templates select="ui:option" mode="selectableList"/>
-		</xsl:element>
+		</select>
 	</xsl:template>
 </xsl:stylesheet>

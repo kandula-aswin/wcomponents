@@ -18,8 +18,8 @@ final class WAjaxControlRenderer extends AbstractWebXmlRenderer {
 	/**
 	 * Paints the given AjaxControl.
 	 *
-	 * @param component the AjaxControl to paint.
-	 * @param renderContext the RenderContext to paint to.
+	 * @param component the AjaxControl to paint
+	 * @param renderContext the RenderContext to paint to
 	 */
 	@Override
 	public void doRender(final WComponent component, final WebXmlRenderContext renderContext) {
@@ -27,7 +27,6 @@ final class WAjaxControlRenderer extends AbstractWebXmlRenderer {
 		XmlStringBuilder xml = renderContext.getWriter();
 		WComponent trigger = ajaxControl.getTrigger() == null ? ajaxControl : ajaxControl.
 				getTrigger();
-		int loadCount = ajaxControl.getLoadCount();
 		int delay = ajaxControl.getDelay();
 
 		if (ajaxControl.getTargets() == null || ajaxControl.getTargets().isEmpty()) {
@@ -35,21 +34,21 @@ final class WAjaxControlRenderer extends AbstractWebXmlRenderer {
 		}
 
 		// Start tag
-		xml.appendTagOpen("ui:ajaxTrigger");
+		xml.appendTagOpen("ui:ajaxtrigger");
 		xml.appendAttribute("triggerId", trigger.getId());
-		xml.appendOptionalAttribute("allowedUses", loadCount > 0, loadCount);
+		xml.appendOptionalAttribute("loadOnce", ajaxControl.isLoadOnce(), "true");
 		xml.appendOptionalAttribute("delay", delay > 0, delay);
 		xml.appendClose();
 
 		// Targets
 		for (AjaxTarget target : ajaxControl.getTargets()) {
-			xml.appendTagOpen("ui:ajaxTargetId");
+			xml.appendTagOpen("ui:ajaxtargetid");
 			xml.appendAttribute("targetId", target.getId());
 			xml.appendEnd();
 		}
 
 		// End tag
-		xml.appendEndTag("ui:ajaxTrigger");
+		xml.appendEndTag("ui:ajaxtrigger");
 	}
 
 }

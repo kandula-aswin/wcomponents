@@ -1,6 +1,6 @@
 package com.github.bordertech.wcomponents;
 
-import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.Factory;
 import com.github.bordertech.wcomponents.util.I18nUtilities;
 import com.github.bordertech.wcomponents.util.LookupTable;
@@ -29,11 +29,6 @@ public abstract class AbstractWSelectList extends AbstractInput {
 	 * Indicates whether having no selection is allowed.
 	 */
 	private final boolean allowNoSelection;
-
-	/**
-	 * Data list caching parameter key.
-	 */
-	public static final String DATALIST_CACHING_PARAM_KEY = "bordertech.wcomponents.dataListCaching.enabled";
 
 	/**
 	 * Creates an AbstractWSelectList.
@@ -86,19 +81,23 @@ public abstract class AbstractWSelectList extends AbstractInput {
 	}
 
 	/**
-	 * A flag if set to true the option description will be encoded. Defaults to <code>true</code>.
+	 * No longer supported. To be deleted.
 	 *
-	 * @param encode If <code>true</code>, option descriptions will be encoded.
+	 * @param encode ignored
+	 * @deprecated 1.2.0 do not use
 	 */
-	public void setDescEncode(final boolean encode) {
-		setFlag(ComponentModel.ENCODE_TEXT_FLAG, encode);
+	public final void setDescEncode(final boolean encode) {
+		// NO OP
 	}
 
 	/**
+	 * No longer supported. To be deleted.
+	 *
 	 * @return Flag indicating if option descriptions are to be encoded.
+	 * @deprecated 1.2.0 do not use
 	 */
-	public boolean getDescEncode() {
-		return isFlagSet(ComponentModel.ENCODE_TEXT_FLAG);
+	public final boolean getDescEncode() {
+		return true;
 	}
 
 	/**
@@ -199,7 +198,7 @@ public abstract class AbstractWSelectList extends AbstractInput {
 	public String getListCacheKey() {
 		Object table = getLookupTable();
 
-		if (table != null && Config.getInstance().getBoolean(DATALIST_CACHING_PARAM_KEY, false)) {
+		if (table != null && ConfigurationProperties.getDatalistCaching()) {
 			String key = APPLICATION_LOOKUP_TABLE.getCacheKeyForTable(table);
 			return key;
 		}

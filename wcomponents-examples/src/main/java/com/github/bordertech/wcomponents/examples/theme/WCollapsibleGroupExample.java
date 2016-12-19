@@ -5,6 +5,7 @@ import com.github.bordertech.wcomponents.WCollapsible;
 import com.github.bordertech.wcomponents.WCollapsibleToggle;
 import com.github.bordertech.wcomponents.WHorizontalRule;
 import com.github.bordertech.wcomponents.WPanel;
+import com.github.bordertech.wcomponents.WTabSet;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.layout.GridLayout;
 
@@ -33,17 +34,17 @@ public class WCollapsibleGroupExample extends WPanel {
 		CollapsibleGroup group1 = new CollapsibleGroup();
 		CollapsibleGroup group2 = new CollapsibleGroup();
 
-		WCollapsibleToggle toggle1 = new WCollapsibleToggle(true, group1);
+		WCollapsibleToggle toggle1 = new WCollapsibleToggle(group1);
 		panel.add(new WText(
 				"Group one toggle controls will only toggle the state of those collapsibles marked as being in group 1."));
 		panel.add(toggle1);
 
-		WCollapsibleToggle toggle2 = new WCollapsibleToggle(true, group2);
+		WCollapsibleToggle toggle2 = new WCollapsibleToggle(group2);
 		panel.add(new WText(
 				"Group two toggle controls will only toggle the state of those collapsibles marked as being in group 2."));
 		panel.add(toggle2);
 
-		WCollapsibleToggle toggle3 = new WCollapsibleToggle(true);
+		WCollapsibleToggle toggle3 = new WCollapsibleToggle();
 		panel.
 				add(new WText(
 						"No group toggle controls should toggle every collapsible in the page."));
@@ -79,5 +80,14 @@ public class WCollapsibleGroupExample extends WPanel {
 				WCollapsible.CollapsibleMode.CLIENT);
 		collapsible5.setCollapsed(true);
 		add(collapsible5);
+
+
+		WTabSet accordion = new WTabSet(WTabSet.TabSetType.ACCORDION);
+		add(accordion);
+		accordion.setGroup(group2);
+		accordion.addTab(new WText("Tab 1 content"), "Tab 1", WTabSet.TabMode.CLIENT);
+		accordion.addTab(new WText("Tab 2 content"), "Tab 2", WTabSet.TabMode.CLIENT);
+		accordion.addTab(new WText("Tab 3 content"), "Tab 3", WTabSet.TabMode.CLIENT);
+		accordion.addTab(new WText("Tab 4 content"), "Tab 4", WTabSet.TabMode.CLIENT);
 	}
 }

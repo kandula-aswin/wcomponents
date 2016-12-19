@@ -360,8 +360,8 @@ chromedriver_cdnurl=${mirror.root}/chromedriver
 							<present present="srconly" targetdir="${merge.impl.dir}/src/main/js"/>
 						</fileset>
 					</copy>
-					<copy todir="${merge.impl.dir}/src/main/xml" overwrite="false">
-						<fileset dir="${prototype.dir}/src/main/xml" includes="**/*" excludesfile="${impl.src.dir}/excludes.txt" erroronmissingdir="false">
+					<copy todir="${merge.impl.dir}/src/main/resource" overwrite="false">
+						<fileset dir="${prototype.dir}/src/main/resource" includes="**/*" excludesfile="${impl.src.dir}/excludes.txt" erroronmissingdir="false">
 							<present present="srconly" targetdir="${merge.impl.dir}/src/main/xml"/>
 						</fileset>
 					</copy>
@@ -418,7 +418,7 @@ chromedriver_cdnurl=${mirror.root}/chromedriver
 			-->
 			<callant antFile="build-properties.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/>
 			<callant antFile="build-images.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/>
-			<callant antFile="build-xml.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/>
+			<callant antFile="build-resource.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/>
 			<callant antFile="build-css.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/><!-- build after images -->
 			<callant antFile="build-i18n.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/>
 			<callant antFile="build-xslt.xml" implName="@{implName}" rootDir = "@{rootDir}" target="@{target}"/><!-- Build after i18n -->
@@ -435,6 +435,7 @@ chromedriver_cdnurl=${mirror.root}/chromedriver
 			<stopwatch name="@{antFile}" action="start"/>
 			<ant antfile="${theme.core.dir}/@{antFile}" inheritAll="false" target="@{target}">
 				<property name="component.rootdir" location="${theme.core.dir}"/>
+				<property name="maven.plugin.classpath" value="${maven.plugin.classpath}"/>
 				<property name="basedir" location="${basedir}"/>
 				<property name="tmp.dir" location="${theme.tmp.dir}"/>
 				<property name="build.number" value="${project.version}"/>
@@ -529,7 +530,7 @@ chromedriver_cdnurl=${mirror.root}/chromedriver
 
 			1. Be named version.properties
 			2. Dump the "build.number" property.
-			
+
 			TODO can we ditch this entirely?
 		-->
 		<attribute name="implName"/>

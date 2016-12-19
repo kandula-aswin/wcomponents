@@ -62,7 +62,9 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 		 */
 		ACCORDION,
 		/**
-		 * A styled version of the Left TabSet, where tabs do not contain any content.
+		 * An undefined tabset determined per theme.
+		 *
+		 * @deprecated 1.2.0
 		 */
 		APPLICATION
 	};
@@ -74,7 +76,7 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 	 */
 	public enum TabMode {
 		/**
-		 * Indicates that a round-trip should be made whenever the tab is selected.
+		 * Synonym for DYNAMIC.
 		 *
 		 * @deprecated Use TabMode DYNAMIC instead as a like-for-like replacement or any other mode if it is more
 		 * appropriate to the individual use case.
@@ -115,12 +117,14 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 	 */
 	public static final TabSetType TYPE_ACCORDION = TabSetType.ACCORDION;
 	/**
-	 * An "application" type tab-set, that supports having multiple open tabs.
+	 * An "application" type tab-set, defined only in a theme.
+	 *
+	 * @deprecated 1.2.0
 	 */
 	public static final TabSetType TYPE_APPLICATION = TabSetType.APPLICATION;
 
 	/**
-	 * A tab mode where invoking the tab will always perform a round-trip to the server.
+	 * A synonym for TabMode.TAB_MODE_DYNAMIC.
 	 *
 	 * @deprecated Use TAB_MODE_DYNAMIC instead as a like-for-like replacement or any other mode if it is more
 	 * appropriate to the individual use case.
@@ -348,7 +352,8 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 		}
 
 		if (activeTabs == null) {
-			if (getTotalTabs() == 0) {
+			// If no tabs or is type accordian then no tabs are open by default
+			if (getTotalTabs() == 0 || getType() == TYPE_ACCORDION) {
 				return Collections.emptyList();
 			} else {
 				// If there are no active tabs, then the first visible tab will be returned as the active tab.
@@ -412,6 +417,11 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 	public void setActiveIndices(final int[] indices) {
 		TabSetModel model = getOrCreateComponentModel();
 
+		if (indices == null || indices.length == 0) {
+			model.activeTabs = null;
+			return;
+		}
+
 		if (model.activeTabs == null) {
 			model.activeTabs = new ArrayList<>(1);
 		}
@@ -424,7 +434,7 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 	}
 
 	/**
-	 * Sets the active tab using tab content. TODO: this is stupid! setActiveTab should use the WTab not its content!
+	 * Sets the active tab using tab content.
 	 *
 	 * @param content the active tab's content.
 	 */
@@ -578,8 +588,12 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 
 			if (Util.empty(indicesStr[0])) {
 				// Special case - no tab selected
-				int idx = findFirstVisibleTab();
-				indices = new int[idx];
+				if (getType() == TYPE_ACCORDION) {
+					indices = null;
+				} else {
+					int idx = findFirstVisibleTab();
+					indices = new int[idx];
+				}
 			} else {
 				// Normal case - one or more tabs selected
 				for (int i = 0; i < indices.length; i++) {
@@ -590,8 +604,7 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 					if (!oldIndices.contains(tabIndex)) {
 						// Check for a server mode tab and set focus
 						WTab tab = getTab(tabIndex);
-						if (TabMode.SERVER == tab.getMode() && UIContextHolder.getCurrent().
-								getFocussed() == null) {
+						if (TabMode.SERVER.equals(tab.getMode()) && UIContextHolder.getCurrent().getFocussed() == null) {
 							tab.setFocussed();
 						}
 						changes.add(tabIndex);
@@ -742,6 +755,33 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 	}
 
 	/**
+	 * The "collapsible" group name that this tabset belongs to.
+	 *
+	 * @return the collapsible group name
+	 */
+	public String getGroupName() {
+		if (TabSetType.ACCORDION.equals(getType())) {
+			CollapsibleGroup group = getComponentModel().group;
+			return (group == null ? null : group.getGroupName());
+		}
+		return null;
+	}
+
+	/**
+	 * Set the {@link com.github.bordertech.wcomponents.CollapsibleGroup} that this component belongs to. This will
+	 * enable a {@link com.github.bordertech.wcomponents.WCollapsibleToggle} component to target the tabset as part of
+	 * the group.
+	 *
+	 * @param group the group to set
+	 */
+	public void setGroup(final CollapsibleGroup group) {
+		if (TabSetType.ACCORDION.equals(getType())) {
+			getOrCreateComponentModel().group = group;
+			group.addCollapsible(this);
+		}
+	}
+
+	/**
 	 * @return a String representation of this component, for debugging purposes.
 	 */
 	@Override
@@ -819,5 +859,11 @@ public class WTabSet extends AbstractNamingContextContainer implements Disableab
 		 * Accordion tab only opens one tab at a time.
 		 */
 		private boolean single;
+
+		/**
+		 * The CollapsibleGroup, primarily used with a {@link com.github.bordertech.wcomponents.WCollapsibleToggle} to
+		 * toggle a group of collapsibles and/or accordion tabs at once. Only applies to Type.ACCORDION.
+		 */
+		private CollapsibleGroup group;
 	}
 }

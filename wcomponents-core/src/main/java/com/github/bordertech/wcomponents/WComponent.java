@@ -1,10 +1,12 @@
 package com.github.bordertech.wcomponents;
 
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import com.github.bordertech.wcomponents.validation.Diagnostic;
 import com.github.bordertech.wcomponents.validation.ValidatingAction;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The WComponent interface.
@@ -366,14 +368,18 @@ public interface WComponent extends WebComponent {
 	 * Retrieves the tag used to identify this component in a Velocity template.
 	 *
 	 * @return the component's tag.
+	 * @deprecated Use {@link WTemplate} instead.
 	 */
+	@Deprecated
 	String getTag();
 
 	/**
 	 * Sets the tag used to identify this component in a Velocity template.
 	 *
 	 * @param tag the component's tag to set.
+	 * @deprecated Use {@link WTemplate} instead.
 	 */
+	@Deprecated
 	void setTag(final String tag);
 
 	/**
@@ -494,18 +500,54 @@ public interface WComponent extends WebComponent {
 	 * of a component using a space separated string. Some values in the HTML class name attribute are determined in the
 	 * theme and are used for core functionality and styling.
 	 *
-	 * @param className the HTML class attribute's value to add to the component.
-	 * @param args optional arguments for the message format string.
+	 * @param className the HTML class attribute's value to add to the component
 	 */
-	void setHtmlClass(final String className, Serializable... args);
+	void setHtmlClass(final String className);
+
+	/**
+	 * Sets additional HTML class name for this component from a set of preset values.
+	 *
+	 * @param className the HTML class attribute's value to add to the component derived from the utility enum
+	 */
+	void setHtmlClass(final HtmlClassProperties className);
+
+	/**
+	 * Append value to the HTML class name for this component.
+	 * @param className the HTML class attribute's value to add to the component
+	 */
+	void addHtmlClass(final String className);
+
+	/**
+	 * Append a value to the HTML class name for this component from a set of preset values.
+	 *
+	 * @param className the HTML class attribute's value to add to the component derived from the utility enum
+	 */
+	void addHtmlClass(final HtmlClassProperties className);
 
 	/**
 	 * Returns the HTML class name string to apply to a component. Some values in the HTML class name attribute are
 	 * determined in the theme and are used for core functionality and styling. This method will only return class name
 	 * values which are added in the application, it has no knowledge of theme's class names.
 	 *
-	 * @return the value to add to the HTML class attribute of the output component.
+	 * @return the value to add to the HTML class attribute of the output component
 	 */
 	String getHtmlClass();
+
+	/**
+	 * @return the HTML class list HashSet for this component
+	 */
+	Set getHtmlClasses();
+
+	/**
+	 * Remove a value from the set of HTML class name values added to the current component.
+	 * @param className the value to remove
+	 */
+	void removeHtmlClass(final String className);
+
+	/**
+	 * Remove a value from the set of HTML class name values added to the current component.
+	 * @param className the property representing the value to remove
+	 */
+	void removeHtmlClass(final HtmlClassProperties className);
 
 }

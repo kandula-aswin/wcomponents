@@ -88,6 +88,22 @@ public class WTextField extends AbstractInput implements AjaxTrigger, AjaxTarget
 	}
 
 	/**
+	 * Set placeholder text which will appear in the field if it is editable and has no content.
+	 * @param placeholder The text to set as the
+	 */
+	public void setPlaceholder(final String placeholder) {
+		getOrCreateComponentModel().placeholder = placeholder;
+	}
+
+	/**
+	 *
+	 * @return The placeholder text for the field.
+	 */
+	public String getPlaceholder() {
+		return getComponentModel().placeholder;
+	}
+
+	/**
 	 * @return the width of the input field in characters.
 	 */
 	public int getColumns() {
@@ -95,7 +111,8 @@ public class WTextField extends AbstractInput implements AjaxTrigger, AjaxTarget
 	}
 
 	/**
-	 * Sets the width of the input field in characters.
+	 * Sets the width of the input field more-or-less in characters. The actual width of the input will vary from
+	 * browser to browser bit will be in the region of 1.4 × columns.
 	 *
 	 * @param columns the number of characters to display.
 	 */
@@ -284,5 +301,10 @@ public class WTextField extends AbstractInput implements AjaxTrigger, AjaxTarget
 		 * The list of suggestions.
 		 */
 		private WSuggestions suggestions;
+
+		/**
+		 * The placeholder text which appears if the field is editable and empty.
+		 */
+		private String placeholder;
 	}
 }

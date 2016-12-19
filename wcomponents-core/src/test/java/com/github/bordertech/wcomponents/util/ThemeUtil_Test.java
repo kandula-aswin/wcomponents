@@ -1,7 +1,6 @@
 package com.github.bordertech.wcomponents.util;
 
 import com.github.bordertech.wcomponents.AbstractWComponentTestCase;
-import com.github.bordertech.wcomponents.Environment;
 import com.github.bordertech.wcomponents.UIContext;
 import com.github.bordertech.wcomponents.WebUtilities;
 import java.util.Locale;
@@ -35,7 +34,7 @@ public class ThemeUtil_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testGetThemeXslt() {
 		String themePath = "/testGetThemeXslt";
-		Config.getInstance().setProperty(Environment.THEME_CONTENT_PATH, themePath);
+		Config.getInstance().setProperty(ConfigurationProperties.THEME_CONTENT_PATH, themePath);
 
 		String build = ThemeUtil.getThemeBuild();
 		String themeName = ThemeUtil.getThemeName();
@@ -46,12 +45,12 @@ public class ThemeUtil_Test extends AbstractWComponentTestCase {
 		Assert.assertEquals("Incorrect theme path", themePath + "/xslt/all.xsl" + versionSuffix,
 				ThemeUtil.getThemeXslt(uic));
 
-		uic.setLocale(Locale.ENGLISH);
-		Assert.assertEquals("Incorrect theme path", themePath + "/xslt/all_en.xsl" + versionSuffix,
+		uic.setLocale(Locale.ENGLISH);  // We used to fetch a different XSL file based on locale, this is no longer the case.
+		Assert.assertEquals("Incorrect theme path", themePath + "/xslt/all.xsl" + versionSuffix,
 				ThemeUtil.getThemeXslt(uic));
 
-		uic.setLocale(Locale.CANADA_FRENCH);
+		uic.setLocale(Locale.CANADA_FRENCH);  // We used to fetch a different XSL file based on locale, this is no longer the case.
 		Assert.assertEquals("Incorrect theme path",
-				themePath + "/xslt/all_fr-CA.xsl" + versionSuffix, ThemeUtil.getThemeXslt(uic));
+				themePath + "/xslt/all.xsl" + versionSuffix, ThemeUtil.getThemeXslt(uic));
 	}
 }

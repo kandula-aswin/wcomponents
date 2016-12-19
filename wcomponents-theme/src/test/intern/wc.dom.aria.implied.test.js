@@ -1,10 +1,10 @@
-define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
+define(["intern!object", "intern/chai!assert", "./resources/test.utils!"],
 	function (registerSuite, assert, testutils) {
 		"use strict";
 		var testHolder,
 			impliedARIA,
-			urlResource = "../../target/test-classes/wcomponents-theme/intern/resources/domAria.html",
-			ANY_SEL_STATE = "${wc.common.helper.anySelectedState}";
+			urlResource = "@RESOURCES@/domAria.html",
+			ANY_SEL_STATE = "any";
 
 		function doNativeStateTest(elements, state, notThisState) {
 			var i, len, next;
@@ -23,11 +23,10 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 		registerSuite({
 			name: "impliedARIA",
 			setup: function() {
-				var result = new testutils.LamePromisePolyFill();
-				testutils.setupHelper(["wc/dom/impliedARIA"], function(obj) {
-					impliedARIA = obj;
+				var result = testutils.setupHelper(["wc/dom/impliedARIA"]).then(function(arr) {
+					impliedARIA = arr[0];
 					testHolder = testutils.getTestHolder();
-					testutils.setUpExternalHTML(urlResource, testHolder).then(result._resolve);
+					return testutils.setUpExternalHTML(urlResource, testHolder);
 				});
 				return result;
 			},

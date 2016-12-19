@@ -1,27 +1,33 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.common.ajax.xsl"/>
 	<xsl:import href="wc.common.hide.xsl"/>
 	<xsl:import href="wc.common.media.n.mediaUnsupportedContent.xsl"/>
+	<xsl:import href="wc.common.n.className.xsl"/>
+	<xsl:import href="wc.common.disabledElement.xsl"/>
 	<!--
 		Transforms for ui:audio from WAudio and ui:video from WVideo and their children.
-		
+
 		The media elements are output as a HTML SPAN element containing a HTML5 AUDIO or
 		VIDEO element. The native player's capabilities depend upon the user agent
 		employed. Where no support is available or the media is not able to be played
 		then a link will be created to each source and track.
+
+		Every use of WAudio must comply with the requirements outlined here:
+ 		https://www.w3.org/TR/media-accessibility-reqs/
 	-->
 	<xsl:template match="ui:audio|ui:video">
 		<xsl:variable name="elementType">
 			<xsl:choose>
 				<xsl:when test="self::ui:audio">
-					<xsl:text>${wc.dom.html5.element.audio}</xsl:text>
+					<xsl:text>audio</xsl:text>
 				</xsl:when>
 				<xsl:otherwise>
-					<xsl:text>${wc.dom.html5.element.video}</xsl:text>
+					<xsl:text>video</xsl:text>
 				</xsl:otherwise>
 			</xsl:choose>
 		</xsl:variable>
 		<span id="{@id}">
+			<xsl:call-template name="makeCommonClass"/>
 			<xsl:if test="@toolTip">
 				<xsl:attribute name="title">
 					<xsl:value-of select="normalize-space(@toolTip)"/>
@@ -29,12 +35,12 @@
 			</xsl:if>
 			<xsl:call-template name="hideElementIfHiddenSet"/>
 			<xsl:call-template name="ajaxTarget"/>
+			<xsl:variable name="mediaId" select="concat(@id, '_media')"/>
+
 			<xsl:element name="{$elementType}">
-				<xsl:if test="@autoplay and not(@controls='none')"><!-- this is to avoid problems caused by not being able to switch off the media -->
-					<xsl:attribute name="autoplay">
-						<xsl:value-of select="@autoplay"/>
-					</xsl:attribute>
-				</xsl:if>
+				<xsl:attribute name="id">
+					<xsl:value-of select="$mediaId"/>
+				</xsl:attribute>
 				<xsl:attribute name="preload">
 					<xsl:choose>
 						<xsl:when test="@preload">
@@ -50,29 +56,36 @@
 						<xsl:value-of select="@mediagroup"/>
 					</xsl:attribute>
 				</xsl:if>
-				<xsl:if test="@loop and not(@controls='none')"><!-- this is to avoid problems caused by not being able to switch off the media loop -->
-					<xsl:attribute name="loop">
-						<xsl:value-of select="@loop"/>
-					</xsl:attribute>
-				</xsl:if>
-				<xsl:if test="@muted and not(@controls='none')"><!-- if no controls then cannot unmute -->
-					<xsl:attribute name="muted">
-						<xsl:value-of select="@muted"/>
-					</xsl:attribute>
+				<xsl:if test="not(@controls) or @controls ne 'none'">
+					<xsl:if test="@autoplay"><!-- this is to avoid problems caused by not being able to switch off the media -->
+						<xsl:attribute name="autoplay">
+							<xsl:value-of select="@autoplay"/>
+						</xsl:attribute>
+					</xsl:if>
+					<xsl:if test="@loop"><!-- this is to avoid problems caused by not being able to switch off the media loop -->
+						<xsl:attribute name="loop">
+							<xsl:value-of select="@loop"/>
+						</xsl:attribute>
+					</xsl:if>
+					<xsl:if test="@muted"><!-- if no controls then cannot unmute -->
+						<xsl:attribute name="muted">
+							<xsl:value-of select="@muted"/>
+						</xsl:attribute>
+					</xsl:if>
 				</xsl:if>
 				<xsl:if test="@alt">
-					<xsl:attribute name="${wc.ui.media.attrib.alt}">
+					<xsl:attribute name="data-wc-alt">
 						<xsl:value-of select="@alt"/>
 					</xsl:attribute>
 				</xsl:if>
 				<xsl:choose>
-					<xsl:when test="not(@controls='play' or @controls='none')">
+					<xsl:when test="not(@controls eq 'play' or @controls eq 'none')">
 						<xsl:attribute name="controls">
 							<xsl:text>controls</xsl:text>
 						</xsl:attribute>
 					</xsl:when>
 					<xsl:otherwise>
-						<xsl:attribute name="${wc.ui.media.attrib.lameControls}">
+						<xsl:attribute name="data-wc-mediacontrols">
 							<xsl:value-of select="@controls"/>
 						</xsl:attribute>
 					</xsl:otherwise>
@@ -96,6 +109,19 @@
 				<xsl:apply-templates select="ui:track"/>
 				<xsl:call-template name="mediaUnsupportedContent"/>
 			</xsl:element>
+			<xsl:if test="@controls eq 'play'">
+				<button type="button" class="wc_btn_icon wc_av_play wc-invite" aria-pressed="false" aria-controls="{$mediaId}">
+					<xsl:if test="not(@autoplay)">
+						<!-- do not allow the button to be disabled if autoplay is on - the user MUST be able to stop/pause playback. -->
+						<xsl:call-template name="disabledElement">
+							<xsl:with-param name="isControl" select="1"/>
+						</xsl:call-template>
+					</xsl:if>
+					<span class="wc-off">
+						<xsl:text>{{t 'media_play'}}</xsl:text>
+					</span>
+				</button>
+			</xsl:if>
 		</span>
 	</xsl:template>
 </xsl:stylesheet>

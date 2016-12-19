@@ -18,6 +18,7 @@ import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.WRadioButtonSelect;
 import com.github.bordertech.wcomponents.WShuffler;
 import com.github.bordertech.wcomponents.WSingleSelect;
+import com.github.bordertech.wcomponents.WSuggestions;
 import com.github.bordertech.wcomponents.WTextField;
 import java.util.Arrays;
 
@@ -59,7 +60,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller.getValueAsString());
+				textField.setText("WShuffler: " + controller.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -70,7 +71,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller2.getValueAsString());
+				textField.setText("WMultiSelect: " + controller2.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -80,17 +81,18 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller3.getValueAsString());
+				textField.setText("WSingleSelect: " + controller3.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
 		add(new WAjaxControl(controller3, textField));
 		final WMultiSelectPair controller4 = new WMultiSelectPair(DATA);
+		controller4.setShuffle(true);
 		controller4.setActionOnChange(new Action() {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller4.getValueAsString());
+				textField.setText("WMultiSelectPair: " + controller4.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -101,7 +103,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller5.getValueAsString());
+				textField.setText("WMultiDropdown: " + controller5.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -112,7 +114,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller6.getValueAsString());
+				textField.setText("WRadioButtonSelect: " + controller6.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -123,7 +125,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller7.getValueAsString());
+				textField.setText("WCheckBoxSelect: " + controller7.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -134,7 +136,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller8.getValueAsString());
+				textField.setText("WDropdown: " + controller8.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -145,7 +147,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller9.getValueAsString());
+				textField.setText("WMultiTextField: " + controller9.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -156,7 +158,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 			@Override
 			public void execute(final ActionEvent event) {
-				textField.setText(controller10.getValueAsString());
+				textField.setText("WDateField: " + controller10.getValueAsString());
 			}
 		});
 		// add the ajax control for the controller
@@ -164,6 +166,19 @@ public class AjaxReplaceControllerExample extends WPanel {
 
 		// the text field really just needs to be read only
 		textField.setReadOnly(true);
+
+		WSuggestions suggestions = new WSuggestions("icao");
+		add(suggestions);
+		final WTextField controller11 = new WTextField();
+		controller11.setSuggestions(suggestions);
+		controller11.setActionOnChange(new Action() {
+			@Override
+			public void execute(final ActionEvent event) {
+				textField.setText("WSuggestions/WTextField: " + controller11.getValueAsString());
+			}
+		});
+		// add the ajax control for the controller
+		add(new WAjaxControl(controller11, textField));
 
 		// the second ajax control is a button
 		ajaxButton.setAction(new Action() {
@@ -176,7 +191,8 @@ public class AjaxReplaceControllerExample extends WPanel {
 		add(new WAjaxControl(ajaxButton,
 				new AjaxTarget[]{controller, controller2, controller3, controller4,
 					controller5, controller6, controller7, controller8,
-					controller9, controller10}));
+					controller9, controller10, controller11}));
+
 
 		// do the layout
 		final WFieldLayout layout = new WFieldLayout();
@@ -191,6 +207,7 @@ public class AjaxReplaceControllerExample extends WPanel {
 		layout.addField("Make a selection", controller8);
 		layout.addField("Enter some text", controller9);
 		layout.addField("Enter a date", controller10);
+		layout.addField("Cached list", controller11);
 		layout.addField("Output", textField);
 		layout.addField((WLabel) null, ajaxButton);
 

@@ -17,14 +17,20 @@ import java.util.List;
  * </p>
  *
  * @author Christina Harris
+ * @author Mark Reeves
  * @since 1.0.0
  */
-public class WDialog extends AbstractWComponent implements Container, AjaxTarget {
+public class WDialog extends AbstractWComponent implements Container {
 
 	/**
 	 * This is the "normal" state for the Dialog component, when the dialog is not visible.
 	 */
 	public static final int INACTIVE_STATE = 0;
+
+	/**
+	 * This state is when the dialog has been manually requested to open.
+	 */
+	public static final int MANUAL_OPEN_STATE = 1;
 
 	/**
 	 * This state is when the dialog is open and the initial render of the content is complete.
@@ -43,9 +49,9 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	public static final int MODELESS = 1;
 
 	/**
-	 * The button used to trigger the dialog.
+	 * Action command string for opening dialog via AJAX.
 	 */
-	private final WButton trigger;
+	public static final String OPEN_DIALOG_ACTION = "opendialogajax";
 
 	/**
 	 * The content holder exists to keep the content hidden from normal requests, yet still have the content attached to
@@ -64,7 +70,7 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 		@Override
 		public String getNamingContextId() {
 			// Build Id
-			StringBuffer id = new StringBuffer();
+			StringBuilder id = new StringBuilder();
 			id.append(WDialog.this.getId());
 			id.append(ID_CONTEXT_SEPERATOR);
 			id.append(getIdName());
@@ -85,7 +91,11 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	 * @param content the dialog content.
 	 */
 	public WDialog(final WComponent content) {
-		this(content, null);
+		add(holder);
+
+		if (content != null) {
+			setContent(content);
+		}
 	}
 
 	/**
@@ -94,19 +104,47 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	 *
 	 * @param content the dialog content.
 	 * @param trigger the WButton used to trigger the dialog to display.
+	 * @deprecated 1.2.3 use {@link #WDialog(WComponent)} and {@link #setTrigger(DialogOpenTrigger)} instead.
 	 */
 	public WDialog(final WComponent content, final WButton trigger) {
-		add(holder);
-
-		if (content != null) {
-			setContent(content);
-		}
-
-		this.trigger = trigger;
+		this(content);
 
 		if (trigger != null) {
-			add(trigger);
+			addLegacyTriggerButton(trigger);
 		}
+	}
+
+	/**
+	 * @return true if the AjaxTrigger a WButton added via the deprecated constructor
+	 * @since 1.2.3
+	 * @deprecated 1.2.3 for backwards compatibility only.
+	 */
+	public final boolean hasLegacyTriggerButton() {
+		return getComponentModel().triggerIsBackwardComaptibleButton;
+	}
+
+	/**
+	 * Flag the component as having a backwards-compatible WButton trigger.
+	 *
+	 * @param state true if the WDialog has the backwards compatible WButton trigger
+	 * @since 1.2.3
+	 * @deprecated 1.2.3 for backwards compatibility only.
+	 */
+	private void setLegacyTriggerButton(final boolean state) {
+		getOrCreateComponentModel().triggerIsBackwardComaptibleButton = state;
+	}
+
+	/**
+	 * Add the backwards compatible WButton trigger.
+	 *
+	 * @param trigger The WButton used to open the WDialog.
+	 * @since 1.2.3
+	 * @deprecated 1.2.3 for backwards compatibility only.
+	 */
+	private void addLegacyTriggerButton(final WButton trigger) {
+		setTrigger(trigger);
+		add(trigger);
+		setLegacyTriggerButton(true);
 	}
 
 	/**
@@ -130,28 +168,23 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	}
 
 	/**
-	 * @return the WButton which is used to trigger the dialog.
-	 */
-	public WComponent getTrigger() {
-		return trigger;
-	}
-
-	/**
 	 * Signals that the dialog should be opened.
 	 */
 	public void display() {
-		getOrCreateComponentModel().state = ACTIVE_STATE;
+		getOrCreateComponentModel().state = MANUAL_OPEN_STATE;
 	}
 
 	/**
-	 * @return The height of the dialog. The default is 600 pixels.
+	 * @return The height of the dialog. The default is unspecified and therefore the dialog will autosize to fit its
+	 * content or the viewport, whichever is smaller.
 	 */
 	public int getHeight() {
 		return getComponentModel().height;
 	}
 
 	/**
-	 * Sets the dialog height. A value of &lt;=0 means "unspecified".
+	 * Sets the dialog height. A value of &lt;=0 means "unspecified". If not set the dialog will attempt to autosize to
+	 * fit its content or the viewport, whichever is smaller.
 	 *
 	 * @param height The height of the dialog, in pixels.
 	 */
@@ -176,19 +209,25 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	}
 
 	/**
+	 * Dialogs must always be resizeable in order to meet accessibility requirements. See <a
+	 * href="https://github.com/BorderTech/wcomponents/issues/606">#606</a>.
+	 *
 	 * @return true if the dialog is resizable.
+	 * @deprecated 1.2.0 as dialogs must always be resizeable.
 	 */
-	public boolean isResizable() {
-		return getComponentModel().resizable;
+	public final boolean isResizable() {
+		return true;
 	}
 
 	/**
-	 * Sets whether the dialog is resizable.
+	 * Sets whether the dialog is resizable. Dialogs must always be resizeable in order to meet accessibility
+	 * requirements. See <a href="https://github.com/BorderTech/wcomponents/issues/606">#606</a>.
 	 *
 	 * @param resizable true if the dialog should be resizable, false if not.
+	 * @deprecated 1.2.0 as dialogs must always be resizeable.
 	 */
-	public void setResizable(final boolean resizable) {
-		getOrCreateComponentModel().resizable = resizable;
+	public final void setResizable(final boolean resizable) {
+		// No Op.
 	}
 
 	/**
@@ -226,6 +265,49 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 		getOrCreateComponentModel().title = I18nUtilities.asMessage(title, args);
 	}
 
+	/**
+	 * Set the component which will open the WDialog.
+	 *
+	 * @param trigger the WComponent which will open the dialog on click/change
+	 */
+	public void setTrigger(final DialogOpenTrigger trigger) {
+		// pre-1.2.3 compatibilty only:
+		if (this.hasLegacyTriggerButton()) {
+			DialogOpenTrigger theTrigger = getTrigger();
+			if (theTrigger instanceof WButton) {
+				remove(theTrigger);
+			}
+			setLegacyTriggerButton(false);
+		}
+		// end of backwards compatibility code.
+		getOrCreateComponentModel().trigger = trigger;
+	}
+
+	/**
+	 * @return the trigger component for this dialog.
+	 */
+	public DialogOpenTrigger getTrigger() {
+		return getComponentModel().trigger;
+	}
+
+	/**
+	 * The action used when a dialog is opened via its trigger.
+	 *
+	 * @param action the trigger open action
+	 */
+	public void setTriggerOpenAction(final Action action) {
+		getOrCreateComponentModel().triggerOpenAction = action;
+	}
+
+	/**
+	 * The action used when a dialog is opened via its trigger.
+	 *
+	 * @return the trigger open action
+	 */
+	public Action getTriggerOpenAction() {
+		return getComponentModel().triggerOpenAction;
+	}
+
 	// -------------------------------------------------------------
 	// Action and Event Handling
 	// -------------------------------------------------------------
@@ -236,14 +318,34 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	 */
 	@Override
 	public void handleRequest(final Request request) {
-		boolean ajaxTargeted = isAjaxTargeted();
-
-		if (ajaxTargeted) {
-			// This is necessary to support dialogs with a trigger,
-			// where the display() method is not called explicitly
+		// Can only be an active DIALOG if it is AJAX targetted.
+		if (isAjaxTargeted()) {
+			if (getState() == INACTIVE_STATE) {
+				handleTriggerOpenAction(request);
+			}
 			getOrCreateComponentModel().state = ACTIVE_STATE;
-		} else if (getComponentModel().state == ACTIVE_STATE && !ajaxTargeted) {
+		} else if (getState() != INACTIVE_STATE) {
 			getOrCreateComponentModel().state = INACTIVE_STATE;
+		}
+	}
+
+	/**
+	 * Run the trigger open action.
+	 *
+	 * @param request the request being processed
+	 */
+	protected void handleTriggerOpenAction(final Request request) {
+		// Run the action (if set)
+		final Action action = getTriggerOpenAction();
+		if (action != null) {
+			final ActionEvent event = new ActionEvent(this, OPEN_DIALOG_ACTION);
+			Runnable later = new Runnable() {
+				@Override
+				public void run() {
+					action.execute(event);
+				}
+			};
+			invokeLater(later);
 		}
 	}
 
@@ -253,6 +355,14 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	@Override
 	protected void preparePaintComponent(final Request request) {
 		super.preparePaintComponent(request);
+		if (getState() == ACTIVE_STATE) {
+			// Can only remain active if it is AJAX targetted
+			if (!isAjaxTargeted()) {
+				getOrCreateComponentModel().state = INACTIVE_STATE;
+			}
+		} else if (getState() == MANUAL_OPEN_STATE) {
+			getOrCreateComponentModel().state = ACTIVE_STATE;
+		}
 		if (getContent() != null) {
 			AjaxHelper.registerContainer(getId(), getId(), getContent().getId(), request);
 		}
@@ -263,7 +373,7 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	 *
 	 * @return true if the dialog is currently AJAX targeted, otherwise false.
 	 */
-	protected final boolean isAjaxTargeted() {
+	public final boolean isAjaxTargeted() {
 		// If the AJAX target is within the dialog, it should be visible.
 		AjaxOperation operation = AjaxHelper.getCurrentOperation();
 		if (operation == null) {
@@ -366,8 +476,23 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 	 * Holds the state information of a WDialog.
 	 *
 	 * @author Yiannis Paschalidis
+	 * @author Mark Reeves
 	 */
 	public static class DialogModel extends ComponentModel {
+
+		/**
+		 * Holds a reference to the component which will open the WDialog.
+		 */
+		private DialogOpenTrigger trigger;
+
+		/**
+		 * Indicates that the WDialog have a nested trigger button. Here for backwards compatibility with pre-1.2.3
+		 * version of WDialog which did not allow an arbitrary AjaxTrigger to open a dialog.
+		 *
+		 * @since 1.2.3
+		 * @deprecated Only here for backwards compatibility.
+		 */
+		private boolean triggerIsBackwardComaptibleButton;
 
 		/**
 		 * The current state of the dialog.
@@ -390,11 +515,6 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 		private int height = 0;
 
 		/**
-		 * Indicates whether the dialog should be resizable.
-		 */
-		private boolean resizable = true;
-
-		/**
 		 * The content to be displayed in the dialog.
 		 */
 		private WComponent content;
@@ -404,5 +524,11 @@ public class WDialog extends AbstractWComponent implements Container, AjaxTarget
 		 * {@link #MODELESS}.
 		 */
 		private int mode = MODELESS;
+
+		/**
+		 * Trigger open action.
+		 */
+		private Action triggerOpenAction;
+
 	}
 }

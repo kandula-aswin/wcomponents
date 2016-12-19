@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
 	<!--
 		This helper template is used to determine the panel wrapper element to make
@@ -9,7 +9,7 @@
 		
 		The name of a HTML element to use instead of the default element. This will
 		only override the default element not the element produced by Type.HEADER,
-		Type.FOOTER, Type.CHROME, Type.ACTION or child element ui:listLayout as these 
+		Type.FOOTER, Type.CHROME, Type.ACTION or child element ui:listlayout as these 
 		have mandatory element types based on HTML5 structure or intended WAI-ARIA
 		landmark roles. 
 		
@@ -31,20 +31,16 @@
 		element should refer to the ANT property.
 	-->
 	<xsl:template name="WPanelContainerElement">
-		<xsl:param name="overrideType"/>
 		<xsl:variable name="type" select="@type"/>
 		<xsl:choose>
-			<xsl:when test="$type='chrome' or $type='action'">
-				<xsl:text>${wc.dom.html5.element.section}</xsl:text>
+			<xsl:when test="$type eq 'chrome' or $type eq 'action'">
+				<xsl:text>section</xsl:text>
 			</xsl:when>
 			<xsl:when test="contains($type,'header')">
-				<xsl:text>${wc.dom.html5.element.header}</xsl:text>
+				<xsl:text>header</xsl:text>
 			</xsl:when>
 			<xsl:when test="contains($type,'footer')">
-				<xsl:text>${wc.dom.html5.element.footer}</xsl:text>
-			</xsl:when>
-			<xsl:when test="$overrideType!=''">
-				<xsl:value-of select="$overrideType"/>
+				<xsl:text>footer</xsl:text>
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:text>div</xsl:text>

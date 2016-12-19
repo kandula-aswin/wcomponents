@@ -2,6 +2,7 @@ package com.github.bordertech.wcomponents.render.webxml;
 
 import com.github.bordertech.wcomponents.TestAction;
 import com.github.bordertech.wcomponents.WContainer;
+import com.github.bordertech.wcomponents.WImage;
 import com.github.bordertech.wcomponents.WLink;
 import com.github.bordertech.wcomponents.WPanel;
 import java.io.IOException;
@@ -188,19 +189,30 @@ public class WLinkRenderer_Test extends AbstractWebXmlRendererTestCase {
 		// No Targets (target itself)
 		link.setAction(new TestAction());
 		assertSchemaMatch(root);
-		assertXpathEvaluatesTo(link.getId(), "//ui:ajaxTrigger/@triggerId", root);
-		assertXpathEvaluatesTo("1", "count(//ui:ajaxTrigger/ui:ajaxTargetId)", root);
-		assertXpathEvaluatesTo(link.getId(), "//ui:ajaxTrigger/ui:ajaxTargetId[1]/@targetId", root);
+		assertXpathEvaluatesTo(link.getId(), "//ui:ajaxtrigger/@triggerId", root);
+		assertXpathEvaluatesTo("1", "count(//ui:ajaxtrigger/ui:ajaxtargetid)", root);
+		assertXpathEvaluatesTo(link.getId(), "//ui:ajaxtrigger/ui:ajaxtargetid[1]/@targetId", root);
 
 		// With Targets
 		link.setAction(new TestAction(), target1, target2);
 		assertSchemaMatch(root);
-		assertXpathEvaluatesTo(link.getId(), "//ui:ajaxTrigger/@triggerId", root);
-		assertXpathEvaluatesTo("2", "count(//ui:ajaxTrigger/ui:ajaxTargetId)", root);
-		assertXpathEvaluatesTo(target1.getId(), "//ui:ajaxTrigger/ui:ajaxTargetId[1]/@targetId",
+		assertXpathEvaluatesTo(link.getId(), "//ui:ajaxtrigger/@triggerId", root);
+		assertXpathEvaluatesTo("2", "count(//ui:ajaxtrigger/ui:ajaxtargetid)", root);
+		assertXpathEvaluatesTo(target1.getId(), "//ui:ajaxtrigger/ui:ajaxtargetid[1]/@targetId",
 				root);
-		assertXpathEvaluatesTo(target2.getId(), "//ui:ajaxTrigger/ui:ajaxTargetId[2]/@targetId",
+		assertXpathEvaluatesTo(target2.getId(), "//ui:ajaxtrigger/ui:ajaxtargetid[2]/@targetId",
 				root);
+	}
+
+
+
+	@Test
+	public void testButtonImageToolTipRender() throws IOException, SAXException, XpathException {
+		WLink link = new WLink();
+		String expected = "alt text";
+		WImage buttonImage = new WImage("http://localhost/image.png", expected);
+		link.setImage(buttonImage.getImage());
+		assertXpathEvaluatesTo(expected, "//ui:link/@toolTip", link);
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.github.bordertech.wcomponents;
 
 import com.github.bordertech.wcomponents.util.Duplet;
+import com.github.bordertech.wcomponents.util.HtmlToXMLUtil;
 import com.github.bordertech.wcomponents.util.I18nUtilities;
 import java.io.Serializable;
 import java.text.MessageFormat;
@@ -32,6 +33,7 @@ import java.util.List;
  * @author Ming Gao
  * @author Adam Millard
  * @author Jonathan Austin
+ * @author Mark Reeves
  */
 public class WMessageBox extends AbstractWComponent implements AjaxTarget, SubordinateTarget {
 
@@ -82,6 +84,7 @@ public class WMessageBox extends AbstractWComponent implements AjaxTarget, Subor
 	 *
 	 * @author Ming Gao
 	 * @author Adam Millard
+	 * @author Mark Reeves
 	 */
 	public static class MessageModel extends ComponentModel {
 
@@ -93,6 +96,11 @@ public class WMessageBox extends AbstractWComponent implements AjaxTarget, Subor
 		 * Message with encoding flag.
 		 */
 		private final List<Duplet<Serializable, Boolean>> messages = new ArrayList<>();
+
+		/**
+		 * The message box title text.
+		 */
+		private Serializable title;
 	}
 
 	/**
@@ -146,6 +154,24 @@ public class WMessageBox extends AbstractWComponent implements AjaxTarget, Subor
 	 */
 	public Type getType() {
 		return getComponentModel().type;
+	}
+
+	/**
+	 * Sets the message box title.
+	 *
+	 * @param title the message box title to set, using {@link MessageFormat} syntax.
+	 * @param args optional arguments for the message format string.
+	 */
+	public void setTitleText(final String title, final Serializable... args) {
+		MessageModel model = getOrCreateComponentModel();
+		model.title = I18nUtilities.asMessage(title, args);
+	}
+
+	/**
+	 * @return the message box title.
+	 */
+	public String getTitleText() {
+		return I18nUtilities.format(null, getComponentModel().title);
 	}
 
 	/**
@@ -215,7 +241,9 @@ public class WMessageBox extends AbstractWComponent implements AjaxTarget, Subor
 
 		for (Duplet<Serializable, Boolean> message : model.messages) {
 			String text = I18nUtilities.format(null, message.getFirst());
-			messages.add(message.getSecond() ? WebUtilities.encode(text) : text);
+			// If we are outputting unencoded content it must be XML valid.
+			boolean encode = message.getSecond();
+			messages.add(encode ? WebUtilities.encode(text) : HtmlToXMLUtil.unescapeToXML(text));
 		}
 
 		return Collections.unmodifiableList(messages);

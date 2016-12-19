@@ -27,10 +27,9 @@ final class ListLayoutRenderer extends AbstractWebXmlRenderer {
 		XmlStringBuilder xml = renderContext.getWriter();
 		ListLayout layout = (ListLayout) panel.getLayout();
 		int childCount = panel.getChildCount();
-		int hgap = layout.getHgap();
-		int vgap = layout.getVgap();
+		int gap = layout.getGap();
 
-		xml.appendTagOpen("ui:listLayout");
+		xml.appendTagOpen("ui:listlayout");
 
 		switch (layout.getType()) {
 			case FLAT:
@@ -85,8 +84,7 @@ final class ListLayoutRenderer extends AbstractWebXmlRenderer {
 
 		xml.appendOptionalAttribute("ordered", layout.isOrdered(), "true");
 
-		xml.appendOptionalAttribute("hgap", hgap > 0, hgap);
-		xml.appendOptionalAttribute("vgap", vgap > 0, vgap);
+		xml.appendOptionalAttribute("gap", gap > 0, gap);
 
 		xml.appendClose();
 
@@ -97,6 +95,6 @@ final class ListLayoutRenderer extends AbstractWebXmlRenderer {
 			xml.appendEndTag("ui:cell");
 		}
 
-		xml.appendEndTag("ui:listLayout");
+		xml.appendEndTag("ui:listlayout");
 	}
 }

@@ -4,8 +4,14 @@ import com.github.bordertech.wcomponents.CollapsibleGroup;
 import com.github.bordertech.wcomponents.HeadingLevel;
 import com.github.bordertech.wcomponents.WCollapsible;
 import com.github.bordertech.wcomponents.WCollapsibleToggle;
+import com.github.bordertech.wcomponents.WDecoratedLabel;
+import com.github.bordertech.wcomponents.WImage;
 import com.github.bordertech.wcomponents.WPanel;
+import com.github.bordertech.wcomponents.WStyledText;
 import com.github.bordertech.wcomponents.WText;
+import com.github.bordertech.wcomponents.WTextField;
+import com.github.bordertech.wcomponents.layout.FlowLayout;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import java.util.Date;
 
 /**
@@ -20,21 +26,9 @@ public class WCollapsibleExample extends WPanel {
 	 * Creates a WCollapsibleExample.
 	 */
 	public WCollapsibleExample() {
-		super(Type.BLOCK);
+		setLayout(new FlowLayout(FlowLayout.Alignment.VERTICAL, 0, 12));
 
-		WText component1 = new WText("Here is some text that is collapsible via the server side.");
-		WCollapsible collapsible1 = new WCollapsible(component1,
-				"Server Side Collapsible - initially collapsed", WCollapsible.CollapsibleMode.SERVER);
-		add(collapsible1);
-
-		WText component2 = new WText(
-				"Here is some more text that is collapsible via the server side.");
-		WCollapsible collapsible2 = new WCollapsible(component2,
-				"Server Side Collapsible - initially expanded", WCollapsible.CollapsibleMode.SERVER);
-		collapsible2.setCollapsed(false);
-		add(collapsible2);
-
-		WText component3 = new WText() {
+		WTextField component3 = new WTextField() {
 			// We want some dynamic text to show that there's a trip to the server.
 			@Override
 			public String getText() {
@@ -56,8 +50,9 @@ public class WCollapsibleExample extends WPanel {
 
 		WText component4 = new WText("Here is some text that is collapsible via the client side.");
 		WCollapsible collapsible4 = new WCollapsible(component4,
-				"Client Side Collapsible - initially collapsed", WCollapsible.CollapsibleMode.CLIENT,
+				"Client Side Collapsible - initially expanded", WCollapsible.CollapsibleMode.CLIENT,
 				group);
+		collapsible4.setCollapsed(false);
 		add(collapsible4);
 
 		WText component5 = new WText(
@@ -79,5 +74,13 @@ public class WCollapsibleExample extends WPanel {
 		collapsible6.setCollapsed(true);
 		collapsible6.setHeadingLevel(HeadingLevel.H2);
 		add(collapsible6);
+
+		// WCollapsible with WDecoratedLabel
+
+		WStyledText iconText = new WStyledText("\u200b");
+		iconText.setHtmlClass(HtmlClassProperties.ICON_EDIT);
+		WDecoratedLabel collLabel = new WDecoratedLabel(iconText, new WText("Edit inside this collapsible"), new WImage("/image/tick.png", "Checked"));
+		WCollapsible collWithWDL = new WCollapsible(new WText("Placeholder"), collLabel);
+		add(collWithWDL);
 	}
 }

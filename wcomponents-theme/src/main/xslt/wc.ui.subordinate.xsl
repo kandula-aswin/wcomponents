@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.ui.root.xsl"/>
 	<!--
 		Transforms for WSubordinateControl. These components have no in-place artefacts in the UI.
@@ -15,7 +15,7 @@
 		Key to find radio buttons which match a ui:subordinate ui:condition. Used by
 		ui:subordinate because a radio buttons name is not the same as its id.
 		-->
-	<xsl:key name="conditionKey" match="//ui:radioButton" use="@id"/>
+	<xsl:key name="conditionKey" match="//ui:radiobutton" use="@id"/>
 	<!--
 		Template match="ui:subordinate|ui:componentGroup|ui:target|ui:onTrue|ui:onFalse|ui:and|ui:or"
 		 Null template to prevent inline UI artefacts.
@@ -37,7 +37,7 @@
 		<xsl:text>], controllers: [</xsl:text>
 		<xsl:apply-templates select="descendant::ui:condition" mode="ids"/>
 		<xsl:text>]}</xsl:text>
-		<xsl:if test="position() != last()">
+		<xsl:if test="position() ne last()">
 			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>
@@ -115,7 +115,7 @@
 		<xsl:text>","identifiers":[</xsl:text>
 		<xsl:apply-templates select="ui:component"/>
 		<xsl:text>]}</xsl:text>
-		<xsl:if test="position() != last()">
+		<xsl:if test="position() ne last()">
 			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>
@@ -127,7 +127,7 @@
 		<xsl:text>"</xsl:text>
 		<xsl:value-of select="@id"/>
 		<xsl:text>"</xsl:text>
-		<xsl:if test="position() != last()">
+		<xsl:if test="position() ne last()">
 			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>
@@ -139,7 +139,7 @@
 		<xsl:text>'</xsl:text>
 		<xsl:value-of select="@controller"/>
 		<xsl:text>'</xsl:text>
-		<xsl:if test="position() != last()">
+		<xsl:if test="position() ne last()">
 			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>
@@ -156,7 +156,7 @@
 		<xsl:text>', targets:[</xsl:text>
 		<xsl:apply-templates select="ui:target" mode="subordinate"/>
 		<xsl:text>]}</xsl:text>
-		<xsl:if test="position() != last()">
+		<xsl:if test="position() ne last()">
 			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>
@@ -174,7 +174,7 @@
 		<xsl:text>', groupId:'</xsl:text>
 		<xsl:value-of select="@groupId"/>
 		<xsl:text>'}</xsl:text>
-		<xsl:if test="position() != last()">
+		<xsl:if test="position() ne last()">
 			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>

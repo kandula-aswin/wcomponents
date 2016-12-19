@@ -1,5 +1,8 @@
 package com.github.bordertech.wcomponents.examples.menu;
 
+import com.github.bordertech.wcomponents.Action;
+import com.github.bordertech.wcomponents.ActionEvent;
+import com.github.bordertech.wcomponents.MenuItem;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WComponent;
 import com.github.bordertech.wcomponents.WMenu;
@@ -11,6 +14,7 @@ import com.github.bordertech.wcomponents.WSubMenu;
 import com.github.bordertech.wcomponents.WSubMenu.MenuMode;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.layout.ColumnLayout;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import com.github.bordertech.wcomponents.util.TreeNode;
 import java.util.Iterator;
 
@@ -55,9 +59,19 @@ public class ColumnMenuExample extends WPanel {
 		mapColumnHierarchy(menu, root, selectedMenuText);
 
 		// Demonstrate different menu modes
+		getSubMenuByText("Australia", menu).setAccessKey('A');
 		getSubMenuByText("NSW", menu).setMode(MenuMode.CLIENT);
 		getSubMenuByText("Branch 1", menu).setMode(MenuMode.DYNAMIC);
 		getSubMenuByText("VIC", menu).setMode(MenuMode.LAZY);
+		WMenuItem itemWithIcon = new WMenuItem("Help");
+		itemWithIcon.setAction(new Action() {
+			@Override
+			public void execute(final ActionEvent event) {
+				// do something
+			}
+		});
+		itemWithIcon.setHtmlClass(HtmlClassProperties.ICON_HELP_BEFORE);
+		menu.add(itemWithIcon);
 
 		return menu;
 	}
@@ -225,16 +239,16 @@ public class ColumnMenuExample extends WPanel {
 			if (text.equals(subMenu.getText())) {
 				return subMenu;
 			}
-			for (int i = 0; i < subMenu.getChildCount(); i++) {
-				WSubMenu result = getSubMenuByText(text, subMenu.getChildAt(i));
+			for (MenuItem item : subMenu.getMenuItems()) {
+				WSubMenu result = getSubMenuByText(text, item);
 				if (result != null) {
 					return result;
 				}
 			}
 		} else if (node instanceof WMenu) {
 			WMenu menu = (WMenu) node;
-			for (int i = 0; i < menu.getChildCount(); i++) {
-				WSubMenu result = getSubMenuByText(text, menu.getChildAt(i));
+			for (MenuItem item : menu.getMenuItems()) {
+				WSubMenu result = getSubMenuByText(text, item);
 				if (result != null) {
 					return result;
 				}

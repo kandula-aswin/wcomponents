@@ -1,205 +1,146 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.common.ajax.xsl"/>
 	<xsl:import href="wc.constants.xsl"/>
 	<xsl:import href="wc.common.disabledElement.xsl"/>
 	<xsl:import href="wc.common.inlineError.xsl"/>
+	<xsl:import href="wc.common.invalid.xsl"/>
 	<xsl:import href="wc.common.hField.xsl"/>
 	<xsl:import href="wc.common.hide.xsl"/>
-	<xsl:import href="wc.ui.table.n.xsl"/>
+	<xsl:import href="wc.ui.table.n.className.xsl"/>
+	<xsl:import href="wc.ui.table.n.caption.xsl"/>
+	<xsl:import href="wc.ui.table.n.tableBottomControls.xsl"/>
+	<xsl:import href="wc.ui.table.n.topControls.xsl"/>
+
 	<!--
 		WTable (and WDataTable)
-	
+
 		This is long but reasonably straight-forward generation of HTML tables.
-	
-		There are two modes of table which differ in how nested rows (ui:subTrs)
-		are treated. Type "table" (assumed if attribute not present) makes all rows sit
-		directly under each other. Type "hierarchic" indents child rows. This causes a
-		few issues since the rows are not actual children but siblings.
-	
-		The HTML TABLE element is actually wrapped in a DIV. This is to provide
-		somewhere to attach messages as a WTable can be in an error state (yes, really).
 
+		The HTML TABLE element itself is wrapped in a DIV. This is to provide somewhere to attach messages as a WTable
+		can be in an error state (yes, really). As a side-effect it makes it really easy to create more-or-les 
+		accessible horizontal scrolling.
 
-		This is the base transform for WTable. The component root HTML element is a DIV.
-		This allows us to add error messaging to the component.
-
-		Common XSLT parameters
-
-		Individual element transforms may require to reference the ancestor table. To
-		facilitate this without doing an ancestor:: lookup for each cell we pass certain
-		information about the table down through all descendant element transforms.
-
-		maxIndent
-		If the table is of type HEIRARCHIC this paramter indicates the maximum depth of
-		the table content preceding the first content column. THis is used to determine
-		the colspan of each row's first cell.
-
-		addCols
-		This is the number of columns in the table in addition to the content columns.
-		This is an integor from 0 to 1 and represents the sum of the existance of row
-		selection and row expansion columns.
-
-		NOTE: there is a current bug in Chrome which is very interesting. If the transform is done in
-		javascript xsl:number value="count(nodeList)" returns nothing but xsl:value-of select="count(nodeList)"
-		returns the expected value. This needs further investigation when we have time. So where we are counting
-		we use value-of and where we have simple numbers we use number.
+		Structural: do not override.
 	-->
 	<xsl:template match="ui:table">
 		<xsl:variable name="id" select="@id"/>
-		<xsl:variable name="isError" select="key('errorKey',$id)"/>
+		<!--
+			NOTE: Error state
 
-		<xsl:variable name="disabled">
-			<xsl:if test="@disabled">
-				<xsl:number value="1"/>
-			</xsl:if>
+			Now it is pretty plain that a table cannot be in an error mode. The table is not, after all, intrinsically
+			interactive. The error indicator is used to provide visual indication that there is an error somewhere in
+			the table. As such it is pretty appalling!
+			
+			It is, therefore, assumed that a table will be in an error state only if the rowselection is in an 
+			error state.
+		-->
+		<xsl:variable name="isError" select="key('errorKey',$id)"/>
+		
+		<xsl:variable name="rowExpansion">
+			<xsl:choose>
+				<xsl:when test="ui:rowexpansion">
+					<xsl:value-of select="1"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
 		
-		<xsl:element name="div">
-			<xsl:attribute name="id">
-				<xsl:value-of select="$id"/>
-			</xsl:attribute>
-			<!--
-				Error state
+		<xsl:variable name="rowSelection">
+			<xsl:choose>
+				<xsl:when test="ui:rowselection">
+					<xsl:value-of select="1"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:value-of select="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
 
-				Now it is pretty plain that a table cannot be in an error mode. The table is
-				not, after all, intrinsically interactive. The error indicator is used to
-				provide visual indication that there is an error somewhere in the table. As
-				such it is pretty appalling!
-			-->
-			<xsl:attribute name="class">
-				<xsl:text>table</xsl:text>
-				<xsl:if test="$isError">
-					<xsl:text> wc_error</xsl:text>
-				</xsl:if>
-				<xsl:if test="@class">
-					<xsl:value-of select="concat(' ', @class)"/>
-				</xsl:if>
-				<xsl:call-template name="WTableAdditionalContainerClass"/>
-			</xsl:attribute>
+		<div id="{$id}">
+			<xsl:call-template name="wtableClassName"/>
 			<xsl:call-template name="hideElementIfHiddenSet"/>
-			<xsl:if test="ui:pagination[@mode='dynamic' or @mode='client'] or ui:rowExpansion[@mode='lazy' or @mode='dynamic'] or ui:sort[@mode='dynamic'] or key('targetKey',$id) or parent::ui:ajaxTarget[@action='replace']">
+
+			<xsl:if test="ui:pagination[@mode eq 'dynamic' or @mode eq 'client'] or 
+				ui:rowexpansion[@mode eq 'lazy' or @mode eq 'dynamic'] or 
+				ui:sort[@mode eq 'dynamic'] or 
+				key('targetKey',$id) or 
+				parent::ui:ajaxtarget[@action eq 'replace']">
 				<xsl:call-template name="setARIALive"/>
 			</xsl:if>
-			<xsl:apply-templates select="ui:margin"/>
-			<!--
-				Disabled state
-
-				The disabled state is not strictly required on the table wrapper since we do
-				not do ancestor-or-self lookups in determining disabled controls. It is used to
-				disable table functionality: actions, rowExpansion, sorting and rowSelection.
-			-->
-			<xsl:call-template name="disabledElement"/>
-			<!--
-				This is a hook to the on load filters applied to a table. A filter applied to
-				a table will show (on the client) only those rows with a matching filter
-				property.
-			-->
-			<xsl:if test="@activeFilters">
-				<xsl:attribute name="${wc.ui.table.rowFilter.attribute.tableFilter}">
-					<xsl:value-of select="@activeFilters"/>
+			
+			<xsl:if test="number($rowExpansion) eq 1">
+				<xsl:variable name="expMode" select="ui:rowexpansion/@mode"/>
+				<xsl:attribute name="data-wc-expmode">	
+					<xsl:choose>
+						<xsl:when test="($expMode eq 'lazy' or $expMode eq 'eager') and ui:subtr/@open">
+							<xsl:text>client</xsl:text>
+						</xsl:when>
+						<xsl:when test="$expMode eq 'eager'">
+							<xsl:text>lazy</xsl:text>
+						</xsl:when>
+						<xsl:when test="$expMode">
+							<xsl:value-of select="$expMode"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:text>client</xsl:text>
+						</xsl:otherwise>
+					</xsl:choose>
 				</xsl:attribute>
 			</xsl:if>
-			
-			<xsl:variable name="isHierarchic">
-				<xsl:choose>
-					<xsl:when test="@type='hierarchic'">
-						<xsl:number value="1"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:number value="0"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:variable>
-			
-			<xsl:variable name="rowExpansion">
-				<xsl:choose>
-					<xsl:when test="ui:rowExpansion">
-						<xsl:value-of select="1"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="0"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:variable>
-			
-			<xsl:variable name="hierarchicWithExpansion">
-				<xsl:choose>
-					<xsl:when test="($isHierarchic + $rowExpansion = 2)  and .//ui:subTr[ancestor::ui:table[1]/@id=$id]">
-						<xsl:number value="1"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:number value="0"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:variable>
-			
-			
+			<xsl:if test="ui:pagination">
+				<xsl:attribute name="data-wc-pagemode">
+					<xsl:choose>
+						<xsl:when test="ui:pagination/@mode">
+							<xsl:value-of select="ui:pagination/@mode"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:text>client</xsl:text>
+						</xsl:otherwise>
+					</xsl:choose>
+				</xsl:attribute>
+			</xsl:if>
+
+			<!-- THIS IS WHERE THE DIV's CONTENT STARTS NO MORE ATTRIBUTES AFTER THIS POINT THANK YOU! -->
 			<!--
-					Holds the maximum number of indentation columns required for the table,
-					not just this row. This is a heavy calculation which came up as a
-					major problem during stress-testing tree tables.
-				-->
-			<xsl:variable name="maxIndent">
-				<xsl:choose>
-					<xsl:when test="$hierarchicWithExpansion=1">
-						<xsl:call-template name="calculateMaxDepth">
-							<xsl:with-param name="thisTable" select="."/>
-						</xsl:call-template>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:number value="0"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:variable>
-			
-			<xsl:variable name="rowSelection">
-				<xsl:choose>
-					<xsl:when test="ui:rowSelection">
-						<xsl:value-of select="1"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="0"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:variable>
-			
-			<xsl:variable name="staticCols">
-				<xsl:choose>
-					<xsl:when test="$maxIndent=0">
-						<!-- when mode is hierarchic the row expansion column(s) is(are) part of the maxIndent if a page has expandable rows -->
-						<xsl:value-of select="$rowSelection + $rowExpansion"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="$rowSelection"/>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:variable>
-			
-			<!--<xsl:variable name="colGroupStaticColspan" select="$staticCols - 1"/>-->
-			
-			<xsl:variable name="firstDataColSorted">
-				<xsl:if test="ui:sort[@col = '0']">
-					<xsl:number value="1"/>
+				Add table controls which do not form part of the table structure but which control and reference the 
+				table. The default are the select/deselect all, expand/collapse all and pagination controls (if position
+				is TOP or BOTH).
+			-->
+			<xsl:call-template name="topControls"/>
+
+			<xsl:variable name="tableClass">
+				<xsl:if test="number($rowExpansion) eq 1">
+					<xsl:text>wc_tbl_expansion</xsl:text>
+				</xsl:if>
+				<xsl:if test="ui:thead/ui:th[@width]">
+					<xsl:text> wc_table_fix</xsl:text>
 				</xsl:if>
 			</xsl:variable>
-			
-			<!-- The table element is then the basic functional component.-->
-			<xsl:element name="table">
-				<xsl:variable name="class">
-					<xsl:if test="ui:thead/ui:th[@width]">
-						<xsl:text>wc_table_fix</xsl:text>
-					</xsl:if>
-					<xsl:if test="$isHierarchic=1">
-						<xsl:text> hierarchic</xsl:text>
-						<xsl:if test="$firstDataColSorted=1 and $rowSelection=0 and $hierarchicWithExpansion=1">
-							<xsl:text> wc_table_sort_nxt</xsl:text>
-						</xsl:if>
-					</xsl:if>
-				</xsl:variable>
-				<xsl:if test="$class != ''">
+	
+			<table>
+				<xsl:if test="$tableClass ne ''">
 					<xsl:attribute name="class">
-						<xsl:value-of select="normalize-space($class)"/>
+						<xsl:value-of select="normalize-space($tableClass)"/>
 					</xsl:attribute>
+				</xsl:if>
+				<xsl:if test="$isError">
+					<xsl:call-template name="invalid"/>
+				</xsl:if>
+				<xsl:if test="number($rowExpansion) + number($rowSelection) gt 0">
+					<xsl:if test="number($rowSelection) eq 1">
+						<xsl:attribute name="aria-multiselectable">
+							<xsl:choose>
+								<xsl:when test="ui:rowselection/@multiple">
+									<xsl:text>true</xsl:text>
+								</xsl:when>
+								<xsl:otherwise>
+									<xsl:text>false</xsl:text>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:attribute>
+					</xsl:if>
 				</xsl:if>
 				<xsl:if test="ui:pagination">
 					<xsl:attribute name="data-wc-rpp">
@@ -213,59 +154,39 @@
 						</xsl:choose>
 					</xsl:attribute>
 				</xsl:if>
-				<xsl:if test="@caption">
-					<xsl:element name="caption">
-						<xsl:value-of select="@caption"/>
-					</xsl:element>
+				<xsl:if test="ui:sort">
+					<xsl:attribute name="sortable">sortable</xsl:attribute>
 				</xsl:if>
 
-				<xsl:element name="colgroup">
-					<xsl:if test="@separators='both' or @separators='vertical'">
+				<xsl:call-template name="caption" />
+
+				<colgroup>
+					<xsl:if test="@separators eq 'both' or @separators eq 'vertical'">
 						<xsl:attribute name="class">
 							<xsl:text>wc_table_colsep</xsl:text>
 						</xsl:attribute>
 					</xsl:if>
-					
-					<xsl:if test="$rowSelection=1">
-						<xsl:element name="col">
-							<xsl:attribute name="class">
-								<xsl:text>wc_table_colauto</xsl:text>
-								<xsl:if test="$firstDataColSorted=1 and $hierarchicWithExpansion=1">
-									<xsl:text> wc_table_sort_nxt</xsl:text>
-								</xsl:if>
-							</xsl:attribute>
-							<xsl:if test="$isDebug=1">
-								<xsl:comment>row selection column</xsl:comment>
-							</xsl:if>
-						</xsl:element>
+
+					<xsl:if test="number($rowSelection) eq 1">
+						<col class="wc_table_colauto"></col>
 					</xsl:if>
-					
-					<xsl:if test="$rowExpansion=1">
-						<xsl:choose>
-							<xsl:when test="$hierarchicWithExpansion=0">
-								<xsl:element name="col">
-									<xsl:attribute name="class">
-										<xsl:text>wc_table_colauto</xsl:text>
-									</xsl:attribute>
-									<xsl:if test="$isDebug=1">
-										<xsl:comment>row expansion column</xsl:comment>
-									</xsl:if>
-								</xsl:element>
-							</xsl:when>
-							<xsl:otherwise>
-								<xsl:call-template name="subTrToCol">
-									<xsl:with-param name="sort" select="$firstDataColSorted"/>
-								</xsl:call-template>
-							</xsl:otherwise>
-						</xsl:choose>
+
+					<xsl:if test="number($rowExpansion) eq 1">
+						<col class="wc_table_colauto"></col>
 					</xsl:if>
+
 					<xsl:choose>
 						<xsl:when test="ui:thead/ui:th">
 							<xsl:apply-templates select="ui:thead/ui:th" mode="col">
 								<xsl:with-param name="stripe">
-									<xsl:if test="@striping='cols'">
-										<xsl:value-of select="1"/>
-									</xsl:if>
+									<xsl:choose>
+										<xsl:when test="@striping eq 'cols'">
+											<xsl:value-of select="1"/>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:number value="0"/>
+										</xsl:otherwise>
+									</xsl:choose>
 								</xsl:with-param>
 								<xsl:with-param name="sortCol" select="ui:sort/@col"/>
 							</xsl:apply-templates>
@@ -273,164 +194,114 @@
 						<xsl:otherwise>
 							<xsl:apply-templates select="ui:tbody/ui:tr[1]/ui:th|ui:tbody/ui:tr[1]/ui:td" mode="col">
 								<xsl:with-param name="stripe">
-									<xsl:if test="@striping='cols'">
-										<xsl:value-of select="1"/>
-									</xsl:if>
+									<xsl:choose>
+										<xsl:when test="@striping eq 'cols'">
+											<xsl:value-of select="1"/>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:number value="0"/>
+										</xsl:otherwise>
+									</xsl:choose>
 								</xsl:with-param>
 								<xsl:with-param name="sortCol" select="ui:sort/@col"/>
 							</xsl:apply-templates>
 						</xsl:otherwise>
 					</xsl:choose>
-				</xsl:element>
+				</colgroup>
 
-				<!--
-					we have to calculate the total number of columns for the header and footer so that
-					the selectAll, expansion, actions and pagination controls span the correct number of
-					columns.
-
-					It is a quirk of the heirarchich type that the row expansion static column is also included in the
-					calculation of maxIndent (to allow for an indentation on the LAST indented row actually) so we
-					have to reduce the count of static cols by 1 to remove this.
-
-					TODO: When I have more of a life I will see if I can work out a better way to do this.
-				-->
-				<xsl:apply-templates select="ui:thead">
-					<xsl:with-param name="maxIndent" select="$maxIndent"/>
-					<xsl:with-param name="addCols" select="$staticCols"/>
-					<xsl:with-param name="disabled" select="$disabled"/>
-				</xsl:apply-templates>
-				<xsl:apply-templates select="ui:tbody">
-					<xsl:with-param name="maxIndent" select="$maxIndent"/>
-					<xsl:with-param name="addCols" select="$staticCols"/>
-					<xsl:with-param name="disabled" select="$disabled"/>
-				</xsl:apply-templates>
-				<xsl:call-template name="tfoot">
-					<xsl:with-param name="maxIndent" select="$maxIndent"/>
-					<xsl:with-param name="addCols" select="$staticCols"/>
-					<xsl:with-param name="disabled" select="$disabled"/>
-				</xsl:call-template>
-			</xsl:element>
+				<xsl:apply-templates select="ui:thead"/>
+				<xsl:apply-templates select="ui:tbody"/>
+				
+			</table>
+			<!--
+				Add table controls which do not form part of the table structure but which control and reference the 
+				table. The default are actions and the pagination controls (if position is unsset, BOTTOM or BOTH).
+			-->
+			<xsl:call-template name="tableBottomControls"/>
 			<xsl:call-template name="inlineError">
 				<xsl:with-param name="errors" select="$isError"/>
 			</xsl:call-template>
 			<xsl:call-template name="hField"/>
-		</xsl:element>
+		</div>
 	</xsl:template>
-
-
 
 	<!--
-		WARNING: DO NOT TAMPLER BELOW HERE UNLESS YOU ARE VERY SURE!
-
-		This template returns the maximum depth of ui:subTr elements in the table. 
-		Called ONLY from the transform for ui:table - we really do not want to have to do this calculation too many times.
-		The calculated value is then passed through all the descendants that need it.
-
-		NOTE: this assumes we have already tested for hierarchic.
-
-		DO NOT CHANGE THIS TEMPLATE!!!!
-		
-		Well, OK, you can if you find a genuine bug but it is a monster and I don't want to hear from you if you break something.
-		
-		
-		param thisTable: The table whose depth we are calculating. 
-			Remember, in a hierarchic table we include the row expansion control in the span of the first data cell (so 
-			it is always under the column header) This means our actual colspan will be one bigger than we expect.
-		
+		Transform for the noData child of a tbody. This is a String so just needs to be wrapped up properly.
 	-->
-	<xsl:template name="calculateMaxDepth">
-		<xsl:variable name="tableId" select="@id"/>
-		<xsl:choose>
-			<xsl:when test="not(ui:rowExpansion and(ui:tbody/ui:tr/ui:subTr))">
-				<xsl:value-of select="0"/>
-			</xsl:when>
-			<xsl:otherwise><!-- if we have at least one subTr, count the subTr depth-->
-				<xsl:apply-templates select=".//ui:subTr[not(ui:tr/ui:subTr) and ancestor::ui:table[1]/@id=$tableId]" mode="subRowDepth">
-					<xsl:sort select="count(ancestor::ui:subTr[ancestor::ui:table[1]/@id=$tableId])" data-type="number" order="descending"/>
-					<xsl:with-param name="tableId" select="$tableId"/>
-				</xsl:apply-templates>
-			</xsl:otherwise>
-		</xsl:choose>
+	<xsl:template match="ui:nodata">
+		<div class="wc-nodata">
+			<xsl:value-of select="."/>
+		</div>
 	</xsl:template>
-	
-	<!-- used only in above template: do not change -->
-	<xsl:template match="ui:subTr" mode="subRowDepth">
-		<xsl:param name="tableId"/>
-		<xsl:if test="position()=1">
-			<xsl:variable name="countSubTr" select="count(ancestor-or-self::ui:subTr[ancestor::ui:table[1]/@id=$tableId])"/>
-			<xsl:choose>
-				<!-- 
-					Each ui:subTr forms a level of indentation for its expand/collapse control.
-					If:
-					* the current node has content or 
-					* the current ui:subTr's parent ui:tr has a (preceding or we wouldn't be the last) sibling ui:tr with a ui:subTr with content or
-					* the nearest ui:tbody ancestor has a ui:subTr descendant at the same level which has content
-					then we have to add an extra level of indent for the content (yes I know all of the conditions are the same and 
-					only the last is actually needed but the first two are MUCH quicker and the OR will only be calculated if 
-					necessary (unlike |)). This is normally the case but if all of the ui:subTrs at a given level are closed 
-					and dynamic/lazy then we do not have the extra node for content.
-				-->
-				<xsl:when test="* or ../../ui:tr/ui:subTr/* or (ancestor::ui:table[1]/ui:tbody//ui:subTr[ancestor::ui:table[1]/@id=$tableId and count(ancestor-or-self::ui:subTr[ancestor::ui:table[1]/@id=$tableId])=$countSubTr]/*)">
-					<xsl:value-of select="$countSubTr + 1"/>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:value-of select="$countSubTr"/>
-				</xsl:otherwise>
-			</xsl:choose>
+
+	<!--
+		Table Actions
+	-->
+	<xsl:template match="ui:actions">
+		<xsl:apply-templates select="ui:action"/>
+	</xsl:template>
+
+	<xsl:template match="ui:action">
+		<xsl:apply-templates select="ui:button"/>
+	</xsl:template>
+
+	<!--
+		Outputs a comma separated list of JSON objects stored in a button attribute which is used to determine whether 
+		the action's conditions are met before undertaking the action.
+	-->
+	<xsl:template match="ui:condition" mode="action">
+		<xsl:text>{"min":"</xsl:text>
+		<xsl:value-of select="@minSelectedRows"/>
+		<xsl:text>","max":"</xsl:text>
+		<xsl:value-of select="@maxSelectedRows"/>
+		<xsl:text>","type":"</xsl:text>
+		<xsl:value-of select="@type"/>
+		<xsl:text>","message":"</xsl:text>
+		<xsl:value-of select="@message"/>
+		<xsl:text>"}</xsl:text>
+		<xsl:if test="position() ne last()">
+			<xsl:text>,</xsl:text>
 		</xsl:if>
 	</xsl:template>
-	
-	
-	<xsl:template name="subTrToCol">
-		<xsl:param name="sort"/>
-		<xsl:variable name="tableId" select="@id"/>
+
+	<!--
+		1. Guard wrapper for action conditions. These are not output in place but are part of the sibling button's 
+		attribute data. The ui:action part of the match is to differentiate from ui:subordinate's ui:condition.
 		
-		<xsl:if test="ui:rowExpansion and ui:tbody/ui:tr/ui:subTr">
-			<xsl:apply-templates select=".//ui:subTr[not(ui:tr/ui:subTr) and ancestor::ui:table[1]/@id=$tableId]" mode="subTrToCol">
-				<xsl:sort select="count(ancestor::ui:subTr[ancestor::ui:table[1]/@id=$tableId])" data-type="number" order="descending"/>
-				<xsl:with-param name="tableId" select="$tableId"/>
-				<xsl:with-param name="sort" select="$sort"/>
-			</xsl:apply-templates>
-		</xsl:if>
-	</xsl:template>
+		2. Null template for ui:sort. The sort indicators are generated in the ui:table column generation and sort 
+		controls in ui:thead/ui:th. The ui:sort element itself contains metaData only and does not generate a usable 
+		HTML artefact.
+	-->
+	<xsl:template match="ui:action/ui:condition|ui:sort"/>
+
+	<!--
+		Creates each col element in the colgroup created in the transform of the table.
 	
-	<xsl:template match="ui:subTr" mode="subTrToCol">
-		<xsl:param name="tableId"/>
-		<xsl:param name="sort"/>
-		<xsl:param name="extraCol" select="1"/>
-		<xsl:if test="position()=1">
-			<xsl:if test="$extraCol = 1">
-				<xsl:variable name="countSubTr" select="count(ancestor-or-self::ui:subTr[ancestor::ui:table[1]/@id=$tableId])"/>
-				<xsl:if test="* or ../../ui:tr/ui:subTr/* or (ancestor::ui:table[1]/ui:tbody//ui:subTr[ancestor::ui:table[1]/@id=$tableId and count(ancestor-or-self::ui:subTr[ancestor::ui:table[1]/@id=$tableId])=$countSubTr]/*)">
-					<col>
-						<xsl:attribute name="class">
-							<xsl:text>wc_table_colauto</xsl:text>
-							<xsl:if test="$sort=1">
-								<xsl:text> wc_table_sort_sorted</xsl:text>
-							</xsl:if>
-						</xsl:attribute>
-					</col>
-					<xsl:if test="$isDebug=1">
-						<xsl:comment>spare</xsl:comment>
-					</xsl:if>
-				</xsl:if>
+		param stripe: 1 if the table has column striping.
+		param sortCol: The 0 indexed column which is currently sorted (if any).
+	-->
+	<xsl:template match="ui:th|ui:td" mode="col">
+		<xsl:param name="stripe" select="0"/>
+		<xsl:param name="sortCol" select="-1"/>
+		<xsl:variable name="class">
+			<xsl:if test="number($stripe) eq 1 and position() mod 2 eq 0">
+				<xsl:text>wc_table_stripe</xsl:text>
 			</xsl:if>
-			<col>
+			<xsl:if test="$sortCol and number($sortCol) ge 0 and position() eq number($sortCol) + 1">
+				<xsl:text> wc_table_sort_sorted</xsl:text>
+			</xsl:if>
+		</xsl:variable>
+		<col>
+			<xsl:if test="$class ne ''">
 				<xsl:attribute name="class">
-					<xsl:text>wc_table_colauto</xsl:text>
-					<xsl:if test="$sort=1">
-						<xsl:text> wc_table_sort_sorted</xsl:text>
-					</xsl:if>
+					<xsl:value-of select="normalize-space($class)"/>
 				</xsl:attribute>
-			</col>
-			<xsl:if test="$isDebug=1">
-				<xsl:comment>subTr</xsl:comment>
 			</xsl:if>
-			<xsl:apply-templates select="ancestor::ui:subTr[ancestor::ui:table[1]/@id=$tableId][1]" mode="subTrToCol">
-				<xsl:with-param name="tableId" select="$tableId"/>
-				<xsl:with-param name="sort" select="$sort"/>
-				<xsl:with-param name="extraCol" select="0"/>
-			</xsl:apply-templates>
-		</xsl:if>
+			<xsl:if test="@width">
+				<xsl:attribute name="style">
+					<xsl:value-of select="concat('width:',@width,'%')"/>
+				</xsl:attribute>
+			</xsl:if>
+		</col>
 	</xsl:template>
 </xsl:stylesheet>

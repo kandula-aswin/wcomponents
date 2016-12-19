@@ -45,7 +45,7 @@ public class WSubMenuRenderer_Test extends AbstractWebXmlRendererTestCase {
 		assertXpathNotExists("//ui:submenu/@selected", menu);
 		assertXpathNotExists("//ui:submenu/@accessKey", menu);
 		assertXpathNotExists("//ui:submenu/@selectMode", menu);
-		assertXpathExists("//ui:submenu/ui:content/ui:menuItem", menu);
+		assertXpathExists("//ui:submenu/ui:content/ui:menuitem", menu);
 		assertXpathNotExists("//ui:submenu/ui:content/ui:separator", menu);
 		assertXpathEvaluatesTo("client", "//ui:submenu/@mode", menu);
 
@@ -59,8 +59,13 @@ public class WSubMenuRenderer_Test extends AbstractWebXmlRendererTestCase {
 		subMenu.setSelectable(true);
 		menu.setSelectedItem(subMenu);
 		subMenu.setAccessKey('A');
-		assertSchemaMatch(menu);
+
+		// Open on first paint
 		assertXpathEvaluatesTo("true", "//ui:submenu/@open", menu);
+		// Closed on second paint
+		assertXpathNotExists("//ui:submenu/@open", menu);
+
+		assertSchemaMatch(menu);
 		assertXpathEvaluatesTo("true", "//ui:submenu/@disabled", menu);
 		assertXpathEvaluatesTo("true", "//ui:submenu/@hidden", menu);
 		assertXpathEvaluatesTo("true", "//ui:submenu/@selectable", menu);
@@ -87,9 +92,10 @@ public class WSubMenuRenderer_Test extends AbstractWebXmlRendererTestCase {
 		assertSchemaMatch(menu);
 		assertXpathEvaluatesTo("dynamic", "//ui:submenu/@mode", menu);
 
+		// mode server mapped to mode dynamic as per https://github.com/BorderTech/wcomponents/issues/687
 		subMenu.setMode(WSubMenu.MenuMode.SERVER);
 		assertSchemaMatch(menu);
-		assertXpathEvaluatesTo("server", "//ui:submenu/@mode", menu);
+		assertXpathEvaluatesTo("dynamic", "//ui:submenu/@mode", menu);
 	}
 
 	@Test

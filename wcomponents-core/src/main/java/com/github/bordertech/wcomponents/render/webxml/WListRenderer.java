@@ -29,8 +29,7 @@ final class WListRenderer extends AbstractWebXmlRenderer {
 		XmlStringBuilder xml = renderContext.getWriter();
 		WList.Type type = list.getType();
 		WList.Separator separator = list.getSeparator();
-		int hgap = list.getHgap();
-		int vgap = list.getVgap();
+		int gap = list.getGap();
 
 		xml.appendTagOpen("ui:panel");
 		xml.appendAttribute("id", component.getId());
@@ -42,9 +41,8 @@ final class WListRenderer extends AbstractWebXmlRenderer {
 		// Render margin
 		MarginRendererUtil.renderMargin(list, renderContext);
 
-		xml.appendTagOpen("ui:listLayout");
-		xml.appendOptionalAttribute("hgap", hgap > 0, hgap);
-		xml.appendOptionalAttribute("vgap", vgap > 0, vgap);
+		xml.appendTagOpen("ui:listlayout");
+		xml.appendOptionalAttribute("gap", gap > 0, gap);
 
 		if (type != null) {
 			switch (type) {
@@ -87,7 +85,7 @@ final class WListRenderer extends AbstractWebXmlRenderer {
 
 		paintRows(list, renderContext);
 
-		xml.appendEndTag("ui:listLayout");
+		xml.appendEndTag("ui:listlayout");
 		xml.appendEndTag("ui:panel");
 	}
 

@@ -3,22 +3,28 @@ package com.github.bordertech.wcomponents.examples;
 import com.github.bordertech.wcomponents.Action;
 import com.github.bordertech.wcomponents.ActionEvent;
 import com.github.bordertech.wcomponents.HeadingLevel;
+import com.github.bordertech.wcomponents.ImageResource;
+import com.github.bordertech.wcomponents.InternalResource;
 import com.github.bordertech.wcomponents.Margin;
 import com.github.bordertech.wcomponents.Request;
 import com.github.bordertech.wcomponents.WAjaxControl;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WCheckBox;
 import com.github.bordertech.wcomponents.WContainer;
+import com.github.bordertech.wcomponents.WEditableImage;
 import com.github.bordertech.wcomponents.WFieldLayout;
+import com.github.bordertech.wcomponents.WFieldSet;
 import com.github.bordertech.wcomponents.WFigure;
 import com.github.bordertech.wcomponents.WHeading;
 import com.github.bordertech.wcomponents.WImage;
+import com.github.bordertech.wcomponents.WImageEditor;
 import com.github.bordertech.wcomponents.WMultiFileWidget;
 import com.github.bordertech.wcomponents.WMultiFileWidget.FileWidgetUpload;
 import com.github.bordertech.wcomponents.WNumberField;
 import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.layout.ColumnLayout;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import com.github.bordertech.wcomponents.validation.ValidatingAction;
 import com.github.bordertech.wcomponents.validation.WValidationErrors;
 import java.awt.Dimension;
@@ -31,6 +37,9 @@ import java.awt.Dimension;
  */
 public class WMultiFileWidgetAjaxExample extends WContainer {
 
+	private static final int DEFAULT_IMAGE_WIDTH = 300;
+	private static final int DEFAULT_IMAGE_HEIGHT = 400;
+	private static final String OVERLAY_URL = "/image/overlay.png";
 	private final WNumberField cols = new WNumberField();
 	private final WNumberField size = new WNumberField();
 	private final WNumberField maxfiles = new WNumberField();
@@ -38,6 +47,10 @@ public class WMultiFileWidgetAjaxExample extends WContainer {
 	private final WCheckBox showThumnails = new WCheckBox();
 	private final WCheckBox mandatory = new WCheckBox();
 	private final WCheckBox readonly = new WCheckBox();
+	private final WCheckBox imageEditorShowOverlay = new WCheckBox();
+	private final WCheckBox imageEditorIsFace = new WCheckBox();
+	private final WNumberField editorWidth = new WNumberField();
+	private final WNumberField editorHeight = new WNumberField();
 	private final WFigure imageHolder;
 
 	/**
@@ -65,6 +78,18 @@ public class WMultiFileWidgetAjaxExample extends WContainer {
 		maxfiles.setMinValue(0);
 		paramsLayout.addField("Max number of files to allow", maxfiles);
 
+		WFieldSet imageEditorFieldSet = new WFieldSet("Image Editor Controls");
+		imageEditorFieldSet.setIdName("image_edit_parameters");
+		WFieldLayout imageEditorParmsLayout = new WFieldLayout();
+		imageEditorParmsLayout.setLabelWidth(25);
+		imageEditorParmsLayout.addField("Show overlay", imageEditorShowOverlay);
+		imageEditorParmsLayout.addField("Facial Image", imageEditorIsFace);
+		imageEditorParmsLayout.addField("Width", editorWidth);
+		imageEditorParmsLayout.addField("Height", editorHeight);
+		imageEditorFieldSet.add(imageEditorParmsLayout);
+		add(imageEditorFieldSet);
+		imageEditorFieldSet.setMargin(new Margin(0, 0, 30, 0));
+
 		showThumnails.setSelected(true);
 		paramsLayout.addField("show thumbnails", showThumnails);
 
@@ -74,6 +99,7 @@ public class WMultiFileWidgetAjaxExample extends WContainer {
 
 		WPanel split = new WPanel();
 		split.setLayout(new ColumnLayout(new int[]{50, 50}, 12, 0));
+		split.setHtmlClass(HtmlClassProperties.RESPOND);
 		add(split);
 
 		// Left
@@ -111,6 +137,40 @@ public class WMultiFileWidgetAjaxExample extends WContainer {
 		widget.setFileTypes(new String[]{"image/*"});
 
 		layout.addField("Upload", widget);
+
+		editorWidth.setMinValue(1);
+		editorHeight.setMinValue(1);
+
+		final WImageEditor editor = new WImageEditor() {
+			@Override
+			protected void preparePaintComponent(final Request request) {
+				super.preparePaintComponent(request);
+				int width = DEFAULT_IMAGE_WIDTH;
+				int height = DEFAULT_IMAGE_HEIGHT;
+
+				if (editorWidth.getValue() != null) {
+					width = editorWidth.getValue().intValue();
+				}
+				if (editorHeight.getValue() != null) {
+					height = editorHeight.getValue().intValue();
+				}
+				Dimension dimension = new Dimension(width, height);
+				setSize(dimension);
+
+				if (imageEditorShowOverlay.isSelected()) {
+					InternalResource overlay = new ImageResource(OVERLAY_URL, "Overlay image shows visible guidlines");
+					setOverlayUrl(overlay.getTargetUrl());
+				} else {
+					setOverlayUrl("");
+				}
+
+				// setIsFace(imageEditorIsFace.isSelected());
+			}
+		};
+		editor.setUseCamera(true);
+
+		widget.setEditor(editor);
+		add(editor);
 
 		previewHeight.setActionOnChange(new Action() {
 			@Override
@@ -163,13 +223,63 @@ public class WMultiFileWidgetAjaxExample extends WContainer {
 
 		add(apply);
 
+		final WText hackFaceTracker = new WText();
+		hackFaceTracker.setEncodeText(false);
+		hackFaceTracker.setText("<script defer=\"defer\">(function() {\n" +
+"		require([\"wc/ui/facetracking\"], function(facetracking) {\n" +
+"			window.setTimeout(function() {			\n" +
+"			var container = document.getElementById(\"image_edit_parameters\"),\n" +
+"				interval = createRange(\"_interval\", \"Interval\"),\n" +
+"				minNeighbors = createRange(\"_minNeighbours\", \"Min Neighbours\"),\n" +
+"				confidence = createRange(\"_confidenceThreshold\", \"Confidence Threshold\", -10, 10, 0.1);\n" +
+"			if (container) {\n" +
+"				container.appendChild(interval);\n" +
+"				container.appendChild(minNeighbors);\n" +
+"				container.appendChild(confidence);\n" +
+"			}}, 1000);\n" +
+"			function createRange(prop, lbl, min, max, step) {\n" +
+"				var onChange = function(element) {\n" +
+"						if (element) {\n" +
+"							var val = element.value;\n" +
+"							facetracking[prop] = (val * 1);\n" +
+"							element.title = val;\n" +
+"						}\n" +
+"						label.textContent = lbl + \" (\" + facetracking[prop] + \")\";\n" +
+"					},\n" +
+"					result = document.createElement(\"div\"),\n" +
+"					label = result.appendChild(document.createElement(\"label\")),\n" +
+"					range = result.appendChild(document.createElement(\"input\"));\n" +
+"				range.setAttribute(\"type\", \"range\");\n" +
+"				range.setAttribute(\"min\", min || \"0\");\n" +
+"				range.setAttribute(\"max\", max || \"10\");\n" +
+"				range.setAttribute(\"step\", step || \"1\");\n" +
+"				range.setAttribute(\"value\", facetracking[prop]);\n" +
+"				range.addEventListener(\"change\", function($event) {\n" +
+"					onChange($event.target);\n" +
+"				}, false);\n" +
+"				onChange();\n" +
+"				return result;\n" +
+"			}\n" +
+"		});\n" +
+"	})();</script>");
+
+		imageEditorIsFace.setActionOnChange(new Action() {
+			@Override
+			public void execute(final ActionEvent event) {
+				editor.setIsFace(imageEditorIsFace.isSelected());
+				if (hackFaceTracker.getParent() == null && imageEditorIsFace.isSelected()) {
+					add(hackFaceTracker);
+				}
+			}
+		});
+
 		// Right
 		final WPanel contentPanel = new WPanel();
 		split.add(contentPanel);
 
 		contentPanel.add(new WHeading(HeadingLevel.H2, "File View"));
 
-		final WImage image = new WImage() {
+		final WImage image = new WEditableImage(widget) {
 			@Override
 			public String getImageUrl() {
 				String fileId = (String) getAttribute("image-fileid");
@@ -245,6 +355,5 @@ public class WMultiFileWidgetAjaxExample extends WContainer {
 		add(new WAjaxControl(size, contentPanel));
 		add(new WAjaxControl(maxfiles, layout));
 		add(new WAjaxControl(widget, imageHolder));
-
 	}
 }

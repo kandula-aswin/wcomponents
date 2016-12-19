@@ -1,5 +1,6 @@
 package com.github.bordertech.wcomponents;
 
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import com.github.bordertech.wcomponents.util.I18nUtilities;
 import com.github.bordertech.wcomponents.util.ReflectionUtil;
 import com.github.bordertech.wcomponents.util.Util;
@@ -20,6 +21,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -174,14 +176,13 @@ public class ComponentModel implements WebModel, Externalizable {
 
 	/**
 	 * Adds extra textual information to describe a component. This is intended for screen-readers only.
-	 * @deprecated use toolTip
 	 */
 	private Serializable accessibleText;
 
 	/**
 	 * Adds extra value to the HTML class of the output component.
 	 */
-	private Serializable htmlClass;
+	private Set<String> htmlClasses;
 
 	/**
 	 * General placeholder for subclasses of WComponent to place model attributes. This is mostly for convenience so
@@ -320,10 +321,7 @@ public class ComponentModel implements WebModel, Externalizable {
 					Object sharedValue = field.get(sharedModel);
 					Object sessionValue = copyData(sharedValue);
 					field.set(this, sessionValue);
-				} catch (IllegalAccessException e) {
-					LOG.error("Failed to set field " + field.getName() + " on " + getClass().
-							getName(), e);
-				} catch (IllegalArgumentException e) {
+				} catch (IllegalAccessException | IllegalArgumentException e) {
 					LOG.error("Failed to set field " + field.getName() + " on " + getClass().
 							getName(), e);
 				}
@@ -336,15 +334,17 @@ public class ComponentModel implements WebModel, Externalizable {
 	/**
 	 * Creates a copy of mutable data, to ensure updates to one component model do not update the other.
 	 *
-	 * TODO: We might need to add other collections/arrays later
-	 *
 	 * @param data the data to copy
 	 * @return a copy of the data, if it is mutable, otherwise the original data.
 	 */
 	protected Object copyData(final Object data) {
 		// For mutable objects, we perform a shallow copy
 		// so that we don't change the state of the shared value
-		if (data instanceof List) {
+		if (data instanceof Stack) {
+			Stack copy = new Stack();
+			copy.addAll((Stack) data);
+			return copy;
+		} else if (data instanceof List) {
 			return new ArrayList((List) data);
 		} else if (data instanceof Hashtable) {
 			return new Hashtable((Hashtable) data);
@@ -455,42 +455,54 @@ public class ComponentModel implements WebModel, Externalizable {
 
 	/**
 	 * @return Returns the tag.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	protected String getTag() {
 		return tag;
 	}
 
 	/**
 	 * @param tag The tag to set.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	protected void setTag(final String tag) {
 		this.tag = tag;
 	}
 
 	/**
 	 * @return Returns the templateUrl.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	public String getTemplateUrl() {
 		return templateUrl;
 	}
 
 	/**
 	 * @param templateUrl The templateUrl to set.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	public void setTemplateUrl(final String templateUrl) {
 		this.templateUrl = templateUrl;
 	}
 
 	/**
 	 * @return Returns the template mark-up.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	public String getTemplateMarkUp() {
 		return templateMarkUp;
 	}
 
 	/**
 	 * @param templateMarkUp The template mark-up to set.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	public void setTemplateMarkUp(final String templateMarkUp) {
 		this.templateMarkUp = templateMarkUp;
 	}
@@ -512,7 +524,6 @@ public class ComponentModel implements WebModel, Externalizable {
 
 	/**
 	 * @return Returns the accessible text.
-	 * @deprecated use getToolTip
 	 */
 	protected Serializable getAccessibleText() {
 		return accessibleText;
@@ -521,25 +532,100 @@ public class ComponentModel implements WebModel, Externalizable {
 	/**
 	 * @param text The accessible text to set.
 	 * @param args optional message format arguments.
-	 * @deprecated use setToolTip
 	 */
 	protected void setAccessibleText(final String text, final Serializable... args) {
 		this.accessibleText = I18nUtilities.asMessage(text, args);
 	}
 
+
 	/**
-	 * @return Returns the HTML class.
+	 * @return the HTML class list as a single space separated String.
 	 */
 	protected Serializable getHtmlClass() {
-		return htmlClass;
+		if (this.htmlClasses == null || this.htmlClasses.isEmpty()) {
+			return null;
+		}
+		int i = 0;
+		StringBuilder result = new StringBuilder();
+
+		for (String c : this.htmlClasses) {
+			if (i++ > 0) {
+				result.append(" ");
+			}
+			result.append(c);
+		}
+		return result.toString();
 	}
 
 	/**
 	 * @param text The HTML class name text to set.
-	 * @param args optional message format arguments.
 	 */
-	protected void setHtmlClass(final String text, final Serializable... args) {
-		this.htmlClass = I18nUtilities.asMessage(text, args);
+	protected void setHtmlClass(final String text) {
+		if (text == null) {
+			this.htmlClasses = null;
+		} else {
+			this.htmlClasses = new HashSet<>();
+			this.htmlClasses.add(text);
+		}
+	}
+
+	/**
+	 * @param className The HTML class name to set.
+	 */
+	protected void setHtmlClass(final HtmlClassProperties className) {
+		if (null == className) {
+			this.htmlClasses = null;
+		} else {
+			setHtmlClass(className.toString());
+		}
+	}
+
+	/**
+	 * @param text The HTML class name text to set.
+	 */
+	protected void addHtmlClass(final String text) {
+		if (!Util.empty(text)) {
+			if (this.htmlClasses == null) {
+				this.htmlClasses = new HashSet<>();
+			}
+			this.htmlClasses.add(text);
+		}
+	}
+
+	/**
+	 * @param className The HTML class name to set.
+	 */
+	protected void addHtmlClass(final HtmlClassProperties className) {
+		if (null != className) {
+			addHtmlClass(className.toString());
+		}
+	}
+
+	/**
+	 * @return the set of HTML classes to add to the current component.
+	 */
+	protected Set getHtmlClasses() {
+		return this.htmlClasses;
+	}
+
+	/**
+	 * Remove a value from the HTML class name list.
+	 * @param className the value to remove
+	 */
+	protected void removeHtmlClass(final String className) {
+		if (this.htmlClasses != null && !Util.empty(className)) {
+			this.htmlClasses.remove(className);
+		}
+	}
+
+	/**
+	 * Remove a value from the HTML class name list.
+	 * @param className the property representing the value to remove
+	 */
+	protected void removeHtmlClass(final HtmlClassProperties className) {
+		if (className != null) {
+			removeHtmlClass(className.toString());
+		}
 	}
 
 	/**

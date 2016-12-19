@@ -5,7 +5,7 @@
 		This build must be called with the name of the implementation rootdir set in property "implementation.name". If
 		 not set then the css from "wcomponents-theme" alone will be used.
 
-		build-images.xml and build-xml.xml needs to be called before this build so that the base64
+		build-images.xml and build-resource.xml needs to be called before this build so that the base64
 		task can find images and webfonts to embed
 	-->
 	<import file="build-import.xml" />
@@ -19,7 +19,7 @@
 	<property name="impl.sass.rootdir" location="${impl.src.main.dir}/sass" />
 	<property name="sass.tmp.src.dir" location="${tmp.dir}/sass" />
 
-	<target name="build" depends="init, copyCssSrc, compileScss, initExcludes, buildCss, minify" description="Builds CSS artifacts then minifies them"> </target>
+	<target name="build" depends="init, copyCssSrc, compileScssVaadinAntWrapper, initExcludes, buildCss, minify" description="Builds CSS artifacts then minifies them"> </target>
 
 	<target name="minify" unless="minifiy.resources.off" depends="imagesToDataUrl">
 		<stopwatch name="minifyCss" action="start" />
@@ -104,17 +104,7 @@
 	<target name="copyCssSrc">
 		<!-- wcomponents-theme SCSS -->
 		<copy todir="${sass.tmp.src.dir}" overwrite="true">
-			<fileset dir="${sass.rootdir}" includes="*.scss" excludesfile="${excludesfile}" />
-			<filterchain>
-				<expandproperties />
-			</filterchain>
-		</copy>
-
-		<!-- wcomponents-theme's plugin SCSS (if any ever exists) -->
-		<copy todir="${sass.tmp.src.dir}" overwrite="true">
-			<fileset dir="${common.src.plugin.dir}" includesfile="${plugin.includesfile}" excludesfile="${excludesfile}" erroronmissingdir="false">
-				<filename name="**/sass/*.scss" />
-			</fileset>
+			<fileset dir="${sass.rootdir}" includes="**/*.scss" excludesfile="${excludesfile}" />
 			<filterchain>
 				<expandproperties />
 			</filterchain>
@@ -122,17 +112,7 @@
 
 		<!-- Implementation SCSS -->
 		<copy todir="${sass.tmp.src.dir}" overwrite="true">
-			<fileset dir="${impl.sass.rootdir}" includes="*.scss" erroronmissingdir="false"/>
-			<filterchain>
-				<expandproperties />
-			</filterchain>
-		</copy>
-
-		<!-- implementation plugin SCSS -->
-		<copy todir="${sass.tmp.src.dir}" overwrite="true">
-			<fileset dir="${impl.src.plugin.dir}" includesfile="${plugin.includesfile}" excludesfile="${excludesfile}" erroronmissingdir="false">
-				<filename name="**/sass/*.scss" />
-			</fileset>
+			<fileset dir="${impl.sass.rootdir}" includes="**/*.scss" erroronmissingdir="false"/>
 			<filterchain>
 				<expandproperties />
 			</filterchain>
@@ -140,28 +120,12 @@
 	</target>
 
 	<!--
-		Make CSS out of SCSS.
-		While we'd like to use a true NodeJS module for this none-sass isn't it: it's a wrapper around
-		the native sass binaries which must be downloaded from the web for the build platform. All sorts
-		of problems ensue which is why we are using a far more reliable, self-contained and stable java
-		invocation of sass using JNA/JNI.
+		Compile Sass to CSS using Vaadin Sass-compiler wrapped by SassTask for efficiency.
 	-->
-	<target name="compileScss">
+	<target name="compileScssVaadinAntWrapper">
 		<stopwatch name="compileScss" action="start" />
-		<taskdef name="sass" classname="com.cathive.sass.SassTask" classpathref="project.class.path"/>
-		<sass in="${sass.tmp.src.dir}" outdir="${style.tmp.src.dir}"/>
-		<!--
-		<property name="sass.executable" location="${basedir}/node_modules/node-sass/bin/node-sass"/>
-		<echo>node ${sass.executable} ${sass.tmp.src.dir} -o ${style.tmp.src.dir}</echo>
-		<nodejs.exec failonerror="true" cwd="${target.rootdir}">
-			<arguments>
-				<arg value="${sass.executable}"/>
-				<arg value="${sass.tmp.src.dir}"/>
-				<arg value="-o" />
-				<arg value="${style.tmp.src.dir}"/>
-			</arguments>
-		</nodejs.exec>
-		-->
+		<taskdef name="sass" classname="com.github.bordertech.wcomponents.sass.SassTask" classpathref="project.class.path"/>
+		<sass in="${sass.tmp.src.dir}" out="${style.tmp.src.dir}" urlmode="absolute"/>
 		<stopwatch name="compileScss" action="total" />
 	</target>
 
@@ -259,12 +223,17 @@
 		<attribute name="destFile" />
 		<sequential>
 			<property name="cleancss.executable" location="${basedir}/node_modules/clean-css/bin/cleancss"/>
-			<echo>node ${cleancss.executable} --skip-rebase --skip-import --rounding-precision -1 -o @{destFile} @{sourceFile}</echo>
+			<echo>node ${cleancss.executable} --skip-import --skip-aggressive-merging --skip-rebase --rounding-precision -1 -o @{destFile} @{sourceFile}</echo>
 			<nodejs.exec failonerror="true" cwd="${target.rootdir}">
 				<arguments>
 					<arg value="${cleancss.executable}"/>
-					<arg value="--skip-rebase"/>
 					<arg value="--skip-import"/>
+<!--					<arg value="-\-skip-advanced"/>-->
+					<arg value="--skip-aggressive-merging"/>
+<!--					<arg value="-\-skip-media-merging"/>-->
+					<arg value="--skip-rebase"/>
+<!--					<arg value="-\-skip-restructuring"/>
+					<arg value="-\-skip-shorthand-compacting"/> -->
 					<arg value="--rounding-precision"/>
 					<arg value="-1"/>
 					<arg value="-o"/>
@@ -279,8 +248,9 @@
 	<target name="imagesToDataUrl" description="Convert images urls to base64 data urls in CSS files">
 		<if>
 			<and>
-				<available file="${images.tmp.src.dir}" type="dir" />
+				<istrue value="${build.optimise.http1}"/>
 				<istrue value="${images.to.base64.dataurls}" />
+				<available file="${images.tmp.src.dir}" type="dir" />
 			</and>
 			<then>
 				<stopwatch name="imagesToDataUrl" action="start" />

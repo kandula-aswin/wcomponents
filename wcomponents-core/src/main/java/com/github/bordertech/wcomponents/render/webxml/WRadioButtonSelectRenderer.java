@@ -29,10 +29,9 @@ final class WRadioButtonSelectRenderer extends AbstractWebXmlRenderer {
 		XmlStringBuilder xml = renderContext.getWriter();
 		int tabIndex = rbSelect.getTabIndex();
 		int cols = rbSelect.getButtonColumns();
-		boolean encode = rbSelect.getDescEncode();
 		boolean readOnly = rbSelect.isReadOnly();
 
-		xml.appendTagOpen("ui:radioButtonSelect");
+		xml.appendTagOpen("ui:radiobuttonselect");
 		xml.appendAttribute("id", component.getId());
 		xml.appendOptionalAttribute("class", component.getHtmlClass());
 		xml.appendOptionalAttribute("track", component.isTracking(), "true");
@@ -77,12 +76,12 @@ final class WRadioButtonSelectRenderer extends AbstractWebXmlRenderer {
 					throw new SystemException("Option groups not supported in WRadioButtonSelect.");
 				} else {
 					renderOption(rbSelect, option, optionIndex++, xml, selectedOption,
-							renderSelectionsOnly, encode);
+							renderSelectionsOnly);
 				}
 			}
 		}
 
-		xml.appendEndTag("ui:radioButtonSelect");
+		xml.appendEndTag("ui:radiobuttonselect");
 
 		if (rbSelect.isAjax()) {
 			paintAjax(rbSelect, xml);
@@ -98,12 +97,10 @@ final class WRadioButtonSelectRenderer extends AbstractWebXmlRenderer {
 	 * @param html the XmlStringBuilder to paint to.
 	 * @param selectedOption the selected option
 	 * @param renderSelectionsOnly true to only render selected options, false to render all options.
-	 * @param encode true if the option description should be encoded, false if not.
 	 */
 	private void renderOption(final WRadioButtonSelect rbSelect, final Object option,
 			final int optionIndex, final XmlStringBuilder html,
-			final Object selectedOption, final boolean renderSelectionsOnly,
-			final boolean encode) {
+			final Object selectedOption, final boolean renderSelectionsOnly) {
 		boolean selected = Util.equals(option, selectedOption);
 
 		if (selected || !renderSelectionsOnly) {
@@ -120,7 +117,7 @@ final class WRadioButtonSelectRenderer extends AbstractWebXmlRenderer {
 			html.appendOptionalAttribute("selected", selected, "true");
 			html.appendOptionalAttribute("isNull", isNull, "true");
 			html.appendClose();
-			html.append(desc, encode);
+			html.appendEscaped(desc);
 			html.appendEndTag("ui:option");
 		}
 	}
@@ -133,16 +130,16 @@ final class WRadioButtonSelectRenderer extends AbstractWebXmlRenderer {
 	 */
 	private void paintAjax(final WRadioButtonSelect rbSelect, final XmlStringBuilder xml) {
 		// Start tag
-		xml.appendTagOpen("ui:ajaxTrigger");
+		xml.appendTagOpen("ui:ajaxtrigger");
 		xml.appendAttribute("triggerId", rbSelect.getId());
 		xml.appendClose();
 
 		// Target
-		xml.appendTagOpen("ui:ajaxTargetId");
+		xml.appendTagOpen("ui:ajaxtargetid");
 		xml.appendAttribute("targetId", rbSelect.getAjaxTarget().getId());
 		xml.appendEnd();
 
 		// End tag
-		xml.appendEndTag("ui:ajaxTrigger");
+		xml.appendEndTag("ui:ajaxtrigger");
 	}
 }

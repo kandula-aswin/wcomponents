@@ -11,6 +11,7 @@ import com.github.bordertech.wcomponents.WComponent;
 import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.NullWriter;
 import com.github.bordertech.wcomponents.util.mock.servlet.MockHttpServletRequest;
 import com.github.bordertech.wcomponents.util.mock.servlet.MockHttpServletResponse;
@@ -151,45 +152,11 @@ public class WServlet_Test extends AbstractWComponentTestCase {
 		Assert.
 				assertEquals("Label should not have painted in session2", 0, ui.label.
 						getPaintCount());
-
-// TODO Review what test is
-//        // This is the actual test of the AJAX servlet's service method
-//        // handleRequest should be called on everything, but only the label should be painted.
-//        WServlet servlet = new WServlet();
-//        servlet.init(new MockServletConfig());
-//
-//        MockHttpServletRequest request = new MockHttpServletRequest(session1);
-//        setActiveContext(uic1);
-//        request.setMethod("GET");
-//        request.setParameter(WServlet.AJAX_TRIGGER_PARAM_NAME, ui.ajaxPanel.getId());
-//        request.setParameter(Environment.SESSION_TOKEN_VARIABLE, uic1.getEnvironment().getSessionToken());
-//        request.setParameter(Environment.STEP_VARIABLE, String.valueOf(uic1.getEnvironment().getStep()));
-//
-//        MockHttpServletResponse response = new MockHttpServletResponse();
-//        servlet.service(request, response);
-//
-//        // check handle request / paint counts for each session - only label should have painted for uic1.
-//        setActiveContext(uic1);
-//        Assert.assertEquals("HandleRequest should have been called for main panel in session1", 2, ui.mainPanel.getHandleRequestCount());
-//        Assert.assertEquals("HandleRequest should have been called for ajax panel in session1", 2, ui.ajaxPanel.getHandleRequestCount());
-//        Assert.assertEquals("HandleRequest should have been called for label panel in session1", 2, ui.label.getHandleRequestCount());
-//        Assert.assertEquals("Paint should not have been called for main panel in session1", 1, ui.mainPanel.getPaintCount());
-//        Assert.assertEquals("Paint should have been called for ajax panel in session1", 2, ui.ajaxPanel.getPaintCount());
-//        Assert.assertEquals("Paint should have been called for label in session1", 1, ui.label.getPaintCount());
-//        setActiveContext(uic2);
-//        Assert.assertEquals("HandleRequest should not have been called for main panel in session2", 1, ui.mainPanel.getHandleRequestCount());
-//        Assert.assertEquals("HandleRequest should not have been called for ajax panel in session2", 1, ui.ajaxPanel.getHandleRequestCount());
-//        Assert.assertEquals("HandleRequest should not have been called for label panel in session2", 1, ui.label.getHandleRequestCount());
-//        Assert.assertEquals("Paint should not have been called for main panel in session1", 1, ui.mainPanel.getPaintCount());
-//        Assert.assertEquals("Paint should not been called for ajax panel in session1", 1, ui.ajaxPanel.getPaintCount());
-//        Assert.assertEquals("Paint should not have been called for label in session1", 0, ui.label.getPaintCount());
-//
-//        Assert.assertTrue("Response should contain label text", response.getOutputAsString().contains(LABEL_TEXT));
 	}
 
 	@Test
 	public void testSubSessionsDisabledNoSSID() throws ServletException, IOException {
-		Config.getInstance().setProperty(ServletUtil.ENABLE_SUBSESSIONS, "false");
+		Config.getInstance().setProperty(ConfigurationProperties.SERVLET_ENABLE_SUBSESSIONS, "false");
 		MyWServlet servlet = new MyWServlet(new WText("test"));
 		servlet.init(new MockServletConfig());
 
@@ -204,7 +171,7 @@ public class WServlet_Test extends AbstractWComponentTestCase {
 
 	@Test
 	public void testSubSessionsDisabled() throws ServletException, IOException {
-		Config.getInstance().setProperty(ServletUtil.ENABLE_SUBSESSIONS, "false");
+		Config.getInstance().setProperty(ConfigurationProperties.SERVLET_ENABLE_SUBSESSIONS, "false");
 		MyWServlet servlet = new MyWServlet(new WText("test"));
 		servlet.init(new MockServletConfig());
 
@@ -228,7 +195,7 @@ public class WServlet_Test extends AbstractWComponentTestCase {
 
 	@Test
 	public void testSubSessionsEnabledNoSSID() throws ServletException, IOException {
-		Config.getInstance().setProperty(ServletUtil.ENABLE_SUBSESSIONS, "true");
+		Config.getInstance().setProperty(ConfigurationProperties.SERVLET_ENABLE_SUBSESSIONS, "true");
 		MyWServlet servlet = new MyWServlet(new WText("test"));
 		servlet.init(new MockServletConfig());
 
@@ -244,7 +211,7 @@ public class WServlet_Test extends AbstractWComponentTestCase {
 
 	@Test
 	public void testSubSessionsEnabled() throws ServletException, IOException {
-		Config.getInstance().setProperty(ServletUtil.ENABLE_SUBSESSIONS, "true");
+		Config.getInstance().setProperty(ConfigurationProperties.SERVLET_ENABLE_SUBSESSIONS, "true");
 		MyWServlet servlet = new MyWServlet(new WText("test"));
 		servlet.init(new MockServletConfig());
 

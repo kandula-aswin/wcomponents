@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.common.selectToggle.xsl"/>
 	<!--
 		Transform for WSelectToggle. This transform creates either:
@@ -8,18 +8,17 @@
 		As far as we are concerned these controls are all buttons and differ only in
 		visual appearance and what they claim to be in WAI-ARIA.
 	-->
-	<xsl:template match="ui:selectToggle">
+	<xsl:template match="ui:selecttoggle">
 		<!--
 			see wc.common.selectToggle.xsl
 		-->
 		<xsl:call-template name="selectToggle">
 			<xsl:with-param name="for" select="@target"/>
 			<xsl:with-param name="name" select="@id"/>
-			<xsl:with-param name="roundTrip" select="@roundTrip"/>
 			<xsl:with-param name="selected" select="@selected"/>
 			<xsl:with-param name="type">
 				<xsl:choose>
-					<xsl:when test="@renderAs='control'">
+					<xsl:when test="@renderAs eq 'control'">
 						<xsl:text>control</xsl:text>
 					</xsl:when>
 					<xsl:otherwise>
@@ -28,7 +27,7 @@
 				</xsl:choose>
 			</xsl:with-param>
 		</xsl:call-template>
-		<xsl:if test="@renderAs='control'">
+		<xsl:if test="@renderAs eq 'control'">
 			<xsl:variable name="myLabel" select="key('labelKey',@id)[1]"/>
 			<xsl:if test="$myLabel">
 				<xsl:apply-templates select="$myLabel" mode="checkable">

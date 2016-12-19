@@ -5,9 +5,11 @@ import com.github.bordertech.wcomponents.RenderContext;
 import com.github.bordertech.wcomponents.Renderer;
 import com.github.bordertech.wcomponents.RendererFactory;
 import com.github.bordertech.wcomponents.WComponent;
+import com.github.bordertech.wcomponents.WTemplate;
 import com.github.bordertech.wcomponents.render.webxml.VelocityRenderer;
 import com.github.bordertech.wcomponents.servlet.WebXmlRenderContext;
 import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.Duplet;
 import com.github.bordertech.wcomponents.util.NullWriter;
 import com.github.bordertech.wcomponents.util.SystemException;
@@ -46,11 +48,6 @@ import org.apache.commons.logging.LogFactory;
  * @since 1.0.0
  */
 public final class UIManager implements PropertyChangeListener {
-
-	/**
-	 * {@link Config Configuration} parameters key prefix for retrieving Renderer overrides.
-	 */
-	private static final String PARAM_KEY_OVERRIDE_PREFIX = "bordertech.wcomponents.UIManager.renderer.";
 
 	/**
 	 * The logger instance for this class.
@@ -141,7 +138,9 @@ public final class UIManager implements PropertyChangeListener {
 	 *
 	 * @param context the render context.
 	 * @return an appropriate renderer for the component and context, or null if a suitable renderer could not be found.
+	 * @deprecated Use {@link WTemplate} instead.
 	 */
+	@Deprecated
 	public static Renderer getTemplateRenderer(final RenderContext context) {
 		String packageName = context.getRenderPackage();
 		Renderer renderer = INSTANCE.templateRenderers.get(packageName);
@@ -160,7 +159,9 @@ public final class UIManager implements PropertyChangeListener {
 	 *
 	 * @param packageName the package to retrieve the template renderer for.
 	 * @return the template renderer for the given package, or null if the package does not contain a template renderer.
+	 * @deprecated Use {@link WTemplate} instead.
 	 */
+	@Deprecated
 	private synchronized Renderer findTemplateRenderer(final String packageName) {
 		RendererFactory factory = INSTANCE.findRendererFactory(packageName);
 		Renderer renderer = factory.getTemplateRenderer();
@@ -259,8 +260,7 @@ public final class UIManager implements PropertyChangeListener {
 			String qualifiedClassName = c.getName();
 
 			// Is there an override for this class?
-			String rendererName = Config.getInstance().getString(
-					PARAM_KEY_OVERRIDE_PREFIX + qualifiedClassName, null);
+			String rendererName = ConfigurationProperties.getRendererOverride(qualifiedClassName);
 
 			if (rendererName != null) {
 				renderer = createRenderer(rendererName);

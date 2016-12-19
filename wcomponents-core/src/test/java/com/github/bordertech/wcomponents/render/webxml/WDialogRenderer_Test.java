@@ -52,11 +52,11 @@ public class WDialogRenderer_Test extends AbstractWebXmlRendererTestCase {
 
 		String xml = renderDialog(dialog);
 		assertXpathEvaluatesTo(dialog.getId(), "//ui:dialog/@id", xml);
-		assertXpathNotExists("//ui:dialog/@resizable", xml);
 		assertXpathNotExists("//ui:dialog/@modal", xml);
 		assertXpathEvaluatesTo(TEST_TITLE, "//ui:dialog/@title", xml);
 		assertXpathNotExists("//ui:dialog/@width", xml);
 		assertXpathNotExists("//ui:dialog/@height", xml);
+		assertXpathNotExists("//ui:dialog/@triggerid", xml);
 
 		int width = 123;
 		int height = 456;
@@ -69,10 +69,6 @@ public class WDialogRenderer_Test extends AbstractWebXmlRendererTestCase {
 		dialog.setMode(WDialog.MODAL);
 		xml = renderDialog(dialog);
 		assertXpathEvaluatesTo("true", "//ui:dialog/@modal", xml);
-
-		dialog.setResizable(true);
-		xml = renderDialog(dialog);
-		assertXpathEvaluatesTo("true", "//ui:dialog/@resizable", xml);
 	}
 
 	@Test
@@ -85,6 +81,7 @@ public class WDialogRenderer_Test extends AbstractWebXmlRendererTestCase {
 		assertXpathEvaluatesTo(dialog.getId(), "//ui:dialog/@id", dialog);
 		assertXpathNotExists("//ui:dialog/@open", dialog);
 		assertXpathEvaluatesTo(trigger.getId(), "//ui:dialog/ui:button/@id", dialog);
+		assertXpathEvaluatesTo(trigger.getId(), "//ui:dialog/@triggerid", dialog);
 	}
 
 	/**

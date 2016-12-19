@@ -1,30 +1,3 @@
-/**
- * Provides functionality to implement a resizeable component.
- *
- * @typedef {Object} module:wc/ui.resizeable.config() Optional module configuration.
- * @property {?int} min The minimum size, in px, any element is allowed to be.
- * @default 0
- * @proprty {?int} step The number of pixels to increase/decrease per keypress when resizing with the arrow keys.
- * @default 6
- *
- * @module
- * @requires module:wc/dom/attribute
- * @requires module:wc/dom/classList
- * @requires module:wc/dom/clearSelection
- * @requires module:wc/dom/event
- * @requires module:wc/dom/getEventOffset
- * @requires module:wc/dom/isAcceptableTarget
- * @requires module:wc/dom/getBox
- * @requires module:wc/dom/getStyle
- * @requires module:wc/dom/initialise
- * @requires module:wc/dom/shed
- * @requires module:wc/dom/uid
- * @requires module:wc/dom/Widget
- * @requires module:wc/has
- * @requires module:wc/ui/ajax/processResponse
- *
- * @todo check source order.
- */
 define(["wc/dom/attribute",
 		"wc/dom/classList",
 		"wc/dom/clearSelection",
@@ -39,9 +12,12 @@ define(["wc/dom/attribute",
 		"wc/dom/Widget",
 		"wc/has",
 		"wc/ui/ajax/processResponse",
-		"module"],
-	/** @param attribute wc/dom/attribute @param classList wc/dom/classList @param clearSelection wc/dom/clearSelection @param event wc/dom/event @param getMouseEventOffset wc/dom/getEventOffset @param isAcceptableTarget wc/dom/isAcceptableTarget @param getBox wc/dom/getBox @param getStyle wc/dom/getStyle @param initialise wc/dom/initialise @param shed wc/dom/shed @param uid wc/dom/uid @param Widget wc/dom/Widget @param has wc/has @param processResponse wc/ui/ajax/processResponse @param module @ignore */
-	function(attribute, classList, clearSelection, event, getMouseEventOffset, isAcceptableTarget, getBox, getStyle, initialise, shed, uid, Widget, has, processResponse, module) {
+		"wc/Observer",
+		"wc/timers",
+		"wc/config"],
+	function(attribute, classList, clearSelection, event, getMouseEventOffset, isAcceptableTarget, getBox, getStyle,
+		initialise, shed, uid, Widget, has, processResponse, Observer, timers, wcconfig) {
+
 		"use strict";
 		/**
 		 * @constructor
@@ -56,19 +32,47 @@ define(["wc/dom/attribute",
 				RESIZEABLE_HAS_ANIMATION_CLASS = "wc_resizeflow",
 				CLASS_REMOVED_ATTRIB = "data-wc-resizeableremovedanimation",
 				CLASS_MAX = "wc_max",
-				conf = module.config(),
-				MIN_SIZE = ((conf && conf.min) ? conf.min : 0), // set this to any sensible size but will cause errors in IE if < 0
+				DEFAULT_MIN_SIZE = 0, // set this to any sensible size but will cause errors in IE if < 0
 				resizing,
 				offsetX = {},
 				offsetY = {},
 				UNIT = "px",
-				KEY_RESIZE = ((conf && conf.step) ? conf.step : 6),  // the number of pixels by which a resizable is resized by keyboard
+				DEFAULT_KEY_RESIZE = 6, // the number of pixels by which a resizable is resized by keyboard
 				ns = "wc.ui.resizeable",
 				BS = ns + ".inited",
 				MM_EVENT = ns + ".move.inited",
 				TRUE = "true",
-				FONT_SIZE;
+				FONT_SIZE,
+				observer,
+				notifyTimer,
+				/**
+				 * @var {number} DEFAULT_NOTIFY_TIMEOUT The delay between resizing and notifying the resize observers. This can
+				 * be small but is handy to prevent continual notification during dragging.
+				 * @private
+				 */
+				DEFAULT_NOTIFY_TIMEOUT = 100,
+				STORED_SIZE_ATTRIB = "data-wc-storedsize";
 
+			/**
+			 * In which direction can the element be resized?
+			 *
+			 * @function
+			 * @private
+			 * @param {Element} element The resizeable component.
+			 * @returns {String} Values are "v" for only vertical, "h" for only horizontal or "" for both.
+			 */
+			function getAllowedDirections(element) {
+				return element.getAttribute("data-wc-resizedirection");
+			}
+
+			function getNotifyTimeout() {
+				var conf = wcconfig.get("wc/ui/resizeable"),
+					result = DEFAULT_NOTIFY_TIMEOUT;
+				if (conf && (conf.delay || conf.delay === 0) && !isNaN(conf.delay) && conf.delay >= 0) {
+					result = conf.delay;
+				}
+				return result;
+			}
 
 			/**
 			 * Get the default font size of the BODY element in pixels.
@@ -96,10 +100,8 @@ define(["wc/dom/attribute",
 					else if (size.indexOf("em")) {
 						return (16 * _s);
 					}
-					else {
-						// if you are going to set your default font size in points, picas or exes you deserve what you get
-						return _s;
-					}
+					// if you are going to set your default font size in points, picas or exes you deserve what you get
+					return _s;
 				}
 				return size;
 			}
@@ -135,30 +137,60 @@ define(["wc/dom/attribute",
 
 				if (_size && isNaN(_size)) {
 					if (_size.indexOf(UNIT) > -1) {
-						_size = parseInt(_size, 10);
+						return parseInt(_size, 10);
 					}
-					else {
-						// someone specified the size in ems or maybe even points, but we will guess ems and getStyle() returned that style
-						_size = Math.round(parseFloat(_size) * FONT_SIZE);
-					}
+					// someone specified the size in ems or maybe even points, but we will guess ems and getStyle() returned that style
+					_size = Math.round(parseFloat(_size) * FONT_SIZE);
+				}
+				if (isNaN(_size)) {
+					return 0;
 				}
 				return _size;
 			}
 
 			/**
 			 * Get the width and height of an element.
+			 *
+			 * If we are getting the "native" size it is without inline styles. This is usually because we need to work
+			 * out how big "auto" or "fit-content" is.
+			 *
 			 * @function
 			 * @private
 			 * @param {Element} element the resizeable component.
+			 * @param {Boolean} native If true remove any inline styles before calculating the size. If a min/max
+			 *    width/height is "auto" or one of the "-content" settings (eg fit-content, -moz-max-content etc) then
+			 *    we need to make a guess at the native box size in pixels. This is a bit experimental.
 			 * @returns {Object} a POJSO with properties {float} width and {float} height.
 			 */
-			function getSize(element) {
+			function getSize(element, native) {
 				var height = element.style.height,
 					width = element.style.width,
+					_width, _height,
+					box;
+
+				try {
+					if (native) {
+						_width = width;
+						_height = height;
+						element.style.width = "";
+						element.style.height = "";
+						width = 0;
+						height = 0;
+					}
 					box = getBox(element);
-				height = height ? parseFloat(height.replace(UNIT, "")) : box.height;
-				width = width ? parseFloat(width.replace(UNIT, "")) : box.width;
-				return {"width": width, "height": height};
+					height = height ? parseFloat(height.replace(UNIT, "")) : box.height;
+					width = width ? parseFloat(width.replace(UNIT, "")) : box.width;
+
+					return {width: width, height: height};
+				}
+				finally {
+					if (_width) {
+						element.style.width = _width;
+					}
+					if (_height) {
+						element.style.height = _height;
+					}
+				}
 			}
 
 			/**
@@ -171,30 +203,69 @@ define(["wc/dom/attribute",
 			 */
 			function getSizeContraint(element, isHeight) {
 				var css = "min-" + (isHeight ? "height" : "width"),
-					needUnits = !(document.defaultView && document.defaultView.getComputedStyle);
-				return getStyle(element, css, needUnits, true) || 0;
+					needUnits = !(document.defaultView && document.defaultView.getComputedStyle),
+					result = getStyle(element, css, needUnits, true) || 0,
+					box;
+
+				if (isNaN(result)) {
+					// we have something like auto or fit-content.
+					if (result === "auto" || result.indexOf("-content")) {
+						box = getSize(element, true);
+						return isHeight ? parseFloat(box.height) : parseFloat(box.width);
+					}
+					return 0;
+				}
+				return result;
 			}
 
 			/**
 			 * Changes the component size.
 			 * @function
 			 * @private
-			 * @param {Element} element the resizeable component
-			 * @param {float} deltaX change in width
-			 * @param {float} deltaY change in height
+			 * @param {Element} element The resizeable component.
+			 * @param {float} deltaX Change in width in pixels.
+			 * @param {float} deltaY Change in height in pixels.
+			 * @param {boolean} [notify] If true notify subscribers from here. This would usually be done in an
+			 * `end-of-event` handler like mouseup or touchend.
 			 */
-			function resize(element, deltaX, deltaY) {
-				var box, min;
-				if (element && (box = getSize(element))) {
-					min = getSizeContraint(element);
-					min = min ? styleToPx(min) : MIN_SIZE;
-					element.style.width = Math.max(box.width + deltaX, min) + UNIT;
-
-					min = getSizeContraint(element, true);
-					min = min ? styleToPx(min) : MIN_SIZE;
-					element.style.height = Math.max(box.height + deltaY, min) + UNIT;
-
+			function resize(element, deltaX, deltaY, notify) {
+				var box, min, _notify, width, height, conf,
+					minSize = DEFAULT_MIN_SIZE;
+				try {
+					if (element && (box = getSize(element))) {
+						conf = wcconfig.get("wc/ui/resizeable");
+						if (conf && conf.min && !isNaN(conf.min) && conf.min > 0) {
+							minSize = conf.min;
+						}
+						if (deltaX) {
+							min = getSizeContraint(element);
+							min = min ? styleToPx(min) : minSize;
+							width = Math.round(Math.max(box.width + deltaX, min));
+							if (width > min && width !== parseInt(element.style.width)) {
+								element.style.width = width + UNIT;
+								_notify = true;
+							}
+						}
+						if (deltaY) {
+							min = getSizeContraint(element, true);
+							min = min ? styleToPx(min) : minSize;
+							height = Math.round(Math.max(box.height + deltaY, min));
+							if (height > min && height !== parseInt(element.style.height)) {
+								element.style.height = height + UNIT;
+								_notify = true;
+							}
+						}
+					}
+				}
+				finally {
 					clearSelection();
+					if (notify && _notify && observer) {
+						if (notifyTimer) {
+							timers.clearTimeout(notifyTimer);
+							notifyTimer = null;
+						}
+						notifyTimer = timers.setTimeout(observer.notify, getNotifyTimeout(), element);
+					}
 				}
 			}
 
@@ -209,10 +280,7 @@ define(["wc/dom/attribute",
 				if (!$event.defaultPrevented && (element = RESIZE.findAncestor(target)) && isAcceptableTarget(element, target) && (resizeTarget = getResizeTarget(element))) {
 					id = resizeTarget.id || (resizeTarget.id = uid());
 
-					if (classList.contains(resizeTarget, RESIZEABLE_HAS_ANIMATION_CLASS)) {
-						classList.remove(resizeTarget, RESIZEABLE_HAS_ANIMATION_CLASS);
-						resizeTarget.setAttribute(CLASS_REMOVED_ATTRIB, TRUE);
-					}
+					instance.disableAnimation(resizeTarget);
 					offset = getMouseEventOffset($event);
 					resizing = id;
 					offsetY[id] = offset.Y;
@@ -232,16 +300,12 @@ define(["wc/dom/attribute",
 					(element = RESIZE.findAncestor(target)) && isAcceptableTarget(element, target) && (resizeTarget = getResizeTarget(element))) {
 					id = resizeTarget.id || (resizeTarget.id = uid());
 					resizing = id;
-					if (classList.contains(resizeTarget, RESIZEABLE_HAS_ANIMATION_CLASS)) {
-						classList.remove(resizeTarget, RESIZEABLE_HAS_ANIMATION_CLASS);
-						resizeTarget.setAttribute(CLASS_REMOVED_ATTRIB, TRUE);
-					}
+					instance.disableAnimation(resizeTarget);
 					offsetX[id] = touch.pageX;
 					offsetY[id] = touch.pageY;
 					$event.preventDefault();
 				}
 			}
-
 
 			/**
 			 * keydown event handler for keyboard driven resize.
@@ -252,37 +316,61 @@ define(["wc/dom/attribute",
 			function keydownEvent($event) {
 				var target = $event.target,
 					element,
-					result = false,
-					x,
-					y,
+					x = 0,
+					y = 0,
 					keyCode = $event.keyCode,
-					resizeTarget;
-				if (!$event.defaultPrevented && (element = RESIZE.findAncestor(target)) && (resizeTarget = getResizeTarget(element))) {
-					switch (keyCode) {
-						case KeyEvent.DOM_VK_RIGHT:
-							x = KEY_RESIZE;
-							break;
-						case KeyEvent.DOM_VK_LEFT:
-							x = 0 - KEY_RESIZE;
-							break;
-						case KeyEvent.DOM_VK_DOWN:
-							y = KEY_RESIZE;
-							break;
-						case KeyEvent.DOM_VK_UP:
-							y = 0 - KEY_RESIZE;
-							break;
-					}
-					// this is the bit that does the key driven "drag"
-					if (x || y) {
-						resize(resizeTarget, x || 0, y || 0);
-						result = true;
-					}
+					resizeTarget,
+					allowed,
+					conf,
+					step = DEFAULT_KEY_RESIZE;
+
+				if ($event.defaultPrevented) {
+					return;
 				}
-				if (result) {
+
+				if (!(element = RESIZE.findAncestor(target))) {
+					return;
+				}
+
+				if (!(resizeTarget = getResizeTarget(element))) {
+					return;
+				}
+
+				allowed =  getAllowedDirections(resizeTarget);
+				conf = wcconfig.get("wc/ui/resizeable");
+				if (conf && conf.step && !isNaN(conf.step) && conf.step > 0) {
+					step = conf.step;
+				}
+				switch (keyCode) {
+					case KeyEvent.DOM_VK_RIGHT:
+						if (allowed !== "v") {
+							x = step;
+						}
+						break;
+					case KeyEvent.DOM_VK_LEFT:
+						if (allowed !== "v") {
+							x = 0 - step;
+						}
+						break;
+					case KeyEvent.DOM_VK_DOWN:
+						if (allowed !== "h") {
+							y = step;
+						}
+						break;
+					case KeyEvent.DOM_VK_UP:
+						if (allowed !== "h") {
+							y = 0 - step;
+						}
+						break;
+				}
+				// this is the bit that does the key driven "drag"
+				if (x || y) {
+					instance.disableAnimation(resizeTarget);
+					resize(resizeTarget, x , y, true);
+					instance.restoreAnimation(element);
 					$event.preventDefault();
 				}
 			}
-
 
 			/**
 			 * Helper function for touch and mouse driven resizing of a component.
@@ -294,14 +382,15 @@ define(["wc/dom/attribute",
 			 */
 			function resizeHandleHelper(element, x, y) {
 				var id = element.id,
-					deltaX = x - offsetX[id],
-					deltaY = y - offsetY[id];
+					allowed = getAllowedDirections(element),
+					deltaX = allowed === "v" ? 0 : x - offsetX[id],
+					deltaY = allowed === "h" ? 0 : y - offsetY[id];
+
 				if (element && (deltaX || deltaY)) {
 					resize(element, deltaX, deltaY);
 				}
 				offsetX[id] = x;
 				offsetY[id] = y;
-				clearSelection();
 			}
 
 			/**
@@ -314,10 +403,7 @@ define(["wc/dom/attribute",
 			function mousemoveEvent($event) {
 				var element, offset;
 				if (resizing && !$event.defaultPrevented && (element = document.getElementById(resizing))) {
-					if (classList.contains(element, RESIZEABLE_HAS_ANIMATION_CLASS)) {
-						classList.remove(element, RESIZEABLE_HAS_ANIMATION_CLASS);
-						element.setAttribute(CLASS_REMOVED_ATTRIB, TRUE);
-					}
+					instance.disableAnimation(element);
 					offset = getMouseEventOffset($event);
 					resizeHandleHelper(element, offset.X, offset.Y);
 				}
@@ -374,9 +460,15 @@ define(["wc/dom/attribute",
 			 */
 			function mouseupTouchendTouchcancelEvent() {
 				var element;
-				if (resizing && (element = document.getElementById(resizing)) && element.getAttribute(CLASS_REMOVED_ATTRIB) === TRUE) {
-					classList.add(element, RESIZEABLE_HAS_ANIMATION_CLASS);
-					element.removeAttribute(CLASS_REMOVED_ATTRIB);
+				if (resizing && (element = document.getElementById(resizing))) {
+					if (observer) {
+						if (notifyTimer) {
+							timers.clearTimeout(notifyTimer);
+							notifyTimer = null;
+						}
+						notifyTimer = timers.setTimeout(observer.notify, getNotifyTimeout(), element);
+					}
+					instance.restoreAnimation(element);
 				}
 				resizing = null;
 			}
@@ -401,7 +493,6 @@ define(["wc/dom/attribute",
 				}
 			};
 
-
 			/**
 			 * Adds event listeners to a resize handle and a mousemove event on the document body when the first resize
 			 * handle is present and visible.
@@ -411,7 +502,7 @@ define(["wc/dom/attribute",
 			 */
 			function bootstrap(element) {
 				var body = document.body;
-				if (!(attribute.get(element, BS) || shed.isHidden(element) || shed.hasHiddenAncestor(element))) {
+				if (!(attribute.get(element, BS) || shed.isHidden(element))) {
 					attribute.set(element, BS, true);
 					event.add(element, event.TYPE.mousedown, mousedownEvent);
 					event.add(element, event.TYPE.keydown, keydownEvent);
@@ -464,6 +555,7 @@ define(["wc/dom/attribute",
 			/**
 			 * Get the widget which describes the component.
 			 * @function module:wc/ui/resizeable.getWidget
+			 * @public
 			 * @returns {Object} A POJSO with {@link module:wc/dom/Widget} "handle" and {@link module:wc/dom/Widget} "maximise"
 			 */
 			this.getWidget = function() {
@@ -473,6 +565,7 @@ define(["wc/dom/attribute",
 			/**
 			 * Makes a given element into a double-click enabled maximise bar.
 			 * @function module:wc/ui/resizeable.setMaxBar
+			 * @public
 			 * @param {Element} element The element we wish to change.
 			 */
 			this.setMaxBar = function(element) {
@@ -482,6 +575,7 @@ define(["wc/dom/attribute",
 			/**
 			 * Removes double-click enabled maximise bar functionality from a given element.
 			 * @function module:wc/ui/resizeable.clearMaxBar
+			 * @public
 			 * @param {Element} element The element we wish to change.
 			 */
 			this.clearMaxBar = function(element) {
@@ -500,10 +594,176 @@ define(["wc/dom/attribute",
 				shed.subscribe(shed.actions.DESELECT, shedSelectSubscriber);
 				processResponse.subscribe(shedAjaxSubscriber, true);
 			};
+
+			/**
+			 * Allows a component to subscribe to resizing.
+			 * @function module:wc/ui/resizeable.subscribe
+			 * @see {@link module:wc/Observer#subscribe}
+			 *
+			 * @param {Function} subscriber The function that will be notified. This function MUST be present at
+			 *    "publish" time, but need not be preset at "subscribe" time.
+			 * @returns {?Function} A reference to the subscriber.
+			 */
+			this.subscribe = function(subscriber) {
+				function _subscribe(_subscriber) {
+					return observer.subscribe(_subscriber);
+				}
+
+				if (!observer) {
+					observer = new Observer();
+					this.subscribe = _subscribe;
+				}
+				return _subscribe(subscriber);
+			};
+
+			/**
+			 * Get the target component being resized.
+			 * @function module:wc/ui/resizeable.getTarget
+			 * @alias module:wc/ui/resizeable.getTarget
+			 * @public
+			 * @param {Element} element The resize handle.
+			 */
+			this.getTarget = getResizeTarget;
+
+			/**
+			 * Remove size from the target of a resize control and optionally store the old size for later re-use.
+			 *
+			 * @function module:wc/ui/resizeable.clearSize
+			 * @public
+			 * @public
+			 * @param {Element} element The resize handle.
+			 * @param {boolean} keep If true store the size for later use.
+			 * @return {Boolean} true if a resizeable target was found and reset.
+			 */
+			this.clearSize = function(element, keep) {
+				var target = getResizeTarget(element),
+					style;
+				if (target) {
+
+					style = target.style;
+					if (keep && !attribute.get(element, STORED_SIZE_ATTRIB)) {
+						attribute.set(element, STORED_SIZE_ATTRIB, style.width + "," + style.height + "," + style.maxWidth + "," + style.maxHeight);
+					}
+					style.width = "";
+					style.height = "";
+					style.minWidth = "";
+					style.minHeight = "";
+
+					if (observer) {
+						observer.notify(target);
+					}
+					return true;
+				}
+				return false;
+			};
+
+			/**
+			 * Reset size to a previously stored set of values.
+			 *
+			 * @function module:wc/ui/resizeable.resetSize
+			 * @public
+			 * @param {Element} element The element we are restoring.
+			 * @param {boolean} ignoreSubscribers if {@code true} then do not notify via observer
+			 */
+			this.resetSize = function(element, ignoreSubscribers) {
+				var stored = attribute.get(element, STORED_SIZE_ATTRIB);
+				if (stored) {
+					attribute.remove(element, STORED_SIZE_ATTRIB);
+					stored = stored.split(",");
+					element.style.width = stored[0];
+					element.style.height = stored[1];
+					element.style.maxWidth = stored[2];
+					element.style.maxHeight = stored[3];
+					if (observer && !ignoreSubscribers) {
+						observer.notify(element);
+					}
+				}
+			};
+
+			/**
+			 * Allow an element to display resize animations.
+			 *
+			 * @function module:wc/ui/resizeable.makeAnimatable
+			 * @public
+			 * @param {Element} element The element to animate.
+			 */
+			this.makeAnimatable = function(element) {
+				classList.add(element, RESIZEABLE_HAS_ANIMATION_CLASS);
+			};
+
+			/**
+			 * Prevent an element from displaying resize animations.
+			 *
+			 * @function module:wc/ui/resizeable.clearAnimatable
+			 * @public
+			 * @param {Element} element The element to stop animating.
+			 */
+			this.clearAnimatable = function(element) {
+				classList.remove(element, RESIZEABLE_HAS_ANIMATION_CLASS);
+			};
+
+			/**
+			 * Prevent resize animations but store the fact that they used to be allowed so they can be turned back on.
+			 *
+			 * @function module:wc/ui/resizeable.disableAnimation
+			 * @public
+			 * @param {Element} element The resizeable element to manipulate.
+			 */
+			this.disableAnimation = function(element) {
+				if (classList.contains(element, RESIZEABLE_HAS_ANIMATION_CLASS)) {
+					this.clearAnimatable(element);
+					element.setAttribute(CLASS_REMOVED_ATTRIB, TRUE);
+				}
+			};
+
+			/**
+			 * Restore resize animations previously disabled.
+			 *
+			 * @function module:wc/ui/resizeable.restoreAnimation
+			 * @public
+			 * @param {Element} element The resizeable element to manipulate.
+			 */
+			this.restoreAnimation = function(element) {
+				if (element.getAttribute(CLASS_REMOVED_ATTRIB) === TRUE) {
+					this.makeAnimatable(element);
+					element.removeAttribute(CLASS_REMOVED_ATTRIB);
+				}
+			};
 		}
 
-		var /** @alias module:wc/ui/resizeable */ instance = new Resizeable();
+		/**
+		 * Provides functionality to implement a resizeable component.
+		 *
+		 * @module
+		 * @requires module:wc/dom/attribute
+		 * @requires module:wc/dom/classList
+		 * @requires module:wc/dom/clearSelection
+		 * @requires module:wc/dom/event
+		 * @requires module:wc/dom/getEventOffset
+		 * @requires module:wc/dom/isAcceptableTarget
+		 * @requires module:wc/dom/getBox
+		 * @requires module:wc/dom/getStyle
+		 * @requires module:wc/dom/initialise
+		 * @requires module:wc/dom/shed
+		 * @requires module:wc/dom/uid
+		 * @requires module:wc/dom/Widget
+		 * @requires module:wc/has
+		 * @requires module:wc/ui/ajax/processResponse
+		 * @requires module:wc/Observer
+		 * @requires module:wc/timers
+		 * @requires module:wc/config
+		 */
+		var instance = new Resizeable();
 		initialise.register(instance);
 		return instance;
+
+		/**
+		 * @typedef {Object} module:wc/ui/resizeable.config() Optional module configuration.
+		 * @property {?int} min The minimum size, in px, any element is allowed to be.
+		 * @default 0
+		 * @property {?int} step The number of pixels to increase/decrease per keypress when resizing with the arrow keys.
+		 * @default 6
+		 * @property {?int} delay The delay, in milliseconds, between resizing an element and notifying the observers.
+		 */
 	}
 );

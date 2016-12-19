@@ -63,7 +63,6 @@ public class WDateField extends AbstractInput implements AjaxTrigger, AjaxTarget
 	public void setData(final Object data) {
 		// This override is necessary to maintain other internal state
 		DateFieldModel model = getOrCreateComponentModel();
-
 		try {
 			super.setData(convertDate(data));
 			model.text = null;
@@ -189,13 +188,26 @@ public class WDateField extends AbstractInput implements AjaxTrigger, AjaxTarget
 		}
 
 		if (changed) {
-			setData(dateValue);
-			DateFieldModel model = getOrCreateComponentModel();
-			model.validDate = dateValue != null || text == null;
-			model.text = text;
+			boolean valid = dateValue != null || text == null;
+			handleRequestValue(dateValue, valid, text);
 		}
 
 		return changed;
+	}
+
+	/**
+	 * Set the request value.
+	 *
+	 * @param value the date value
+	 * @param valid true if valid value
+	 * @param text the user text
+	 */
+	protected void handleRequestValue(final Date value, final boolean valid, final String text) {
+		// As setData() clears the text value (if valid), this must be called first so it can be set after
+		setData(value);
+		DateFieldModel model = getOrCreateComponentModel();
+		model.validDate = valid;
+		model.text = text;
 	}
 
 	/**
@@ -250,9 +262,8 @@ public class WDateField extends AbstractInput implements AjaxTrigger, AjaxTarget
 	 */
 	@Override
 	protected void validateComponent(final List<Diagnostic> diags) {
-		super.validateComponent(diags);
-
 		if (isParseable()) {
+			super.validateComponent(diags);
 			validateDate(diags);
 		} else {
 			diags.add(createErrorDiagnostic(getComponentModel().errorMessage, this));
@@ -385,6 +396,20 @@ public class WDateField extends AbstractInput implements AjaxTrigger, AjaxTarget
 		 * The maximum date value to allow.
 		 */
 		private Date maxDate;
+
+		/**
+		 * Maintain internal state.
+		 */
+		@Override
+		public void resetData() {
+			super.resetData();
+			ComponentModel model = getSharedModel();
+			if (model instanceof DateFieldModel) {
+				DateFieldModel shared = (DateFieldModel) model;
+				this.text = shared.text;
+				this.validDate = shared.validDate;
+			}
+		}
 
 	}
 }

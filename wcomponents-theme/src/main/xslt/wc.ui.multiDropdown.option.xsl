@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.common.ajax.xsl"/>
 	<xsl:import href="wc.common.disabledElement.xsl"/>
 	<xsl:import href="wc.common.multiFormComponent.n.multiFieldIcon.xsl"/>
@@ -12,22 +12,12 @@
 		param myLabel: the WLabel for the parent multiDropdown (if any).
 	-->
 	<xsl:template match="ui:option" mode="multiDropDown">
-		<xsl:param name="isSingular"/>
+		<xsl:param name="isSingular" select="0"/>
 		<xsl:param name="myLabel"/>
-		<xsl:variable name="option" select="."/>
-		<xsl:variable name="ancestorMDD" select="ancestor::ui:multiDropdown"/>
+		<xsl:variable name="ancestorMDD" select="ancestor::ui:multidropdown"/>
 		<xsl:variable name="id" select="$ancestorMDD/@id"/>
 		<li>
-			<xsl:element name="select">
-				<xsl:attribute name="name">
-					<xsl:value-of select="$id"/>
-				</xsl:attribute>
-				<xsl:attribute name="id">
-					<xsl:value-of select="concat($id,generate-id(),'-',position())"/>
-				</xsl:attribute>
-				<xsl:attribute name="title">
-					<xsl:value-of select="$$${wc.ui.multiFormComponent.i18n.optionLabelText}"/>
-				</xsl:attribute>
+			<select name="{$id}" id="{concat($id,generate-id(),'-',position())}" title="{{t 'mfc_option'}}">
 				<xsl:if test="$ancestorMDD/@submitOnChange">
 					<xsl:attribute name="class">
 						<xsl:text>wc_soc</xsl:text>
@@ -38,15 +28,20 @@
 					<xsl:with-param name="field" select="$ancestorMDD"/>
 				</xsl:call-template>
 				<xsl:if test="$ancestorMDD/@data">
-					<xsl:attribute name="${wc.ui.selectLoader.attribute.dataListId}">
+					<xsl:attribute name="data-wc-list">
 						<xsl:value-of select="$ancestorMDD/@data"/>
 					</xsl:attribute>
 				</xsl:if>
+				<xsl:if test="$ancestorMDD/@autocomplete">
+					<xsl:attribute name="autocomplete">
+						<xsl:value-of select="$ancestorMDD/@autocomplete"/>
+					</xsl:attribute>
+				</xsl:if>
 				<xsl:apply-templates select="$ancestorMDD/*" mode="mfcInList">
-					<xsl:with-param name="option" select="$option"/>
+					<xsl:with-param name="selectedOption" select="."/>
 					<xsl:with-param name="isSingular" select="$isSingular"/>
 				</xsl:apply-templates>
-			</xsl:element>
+			</select>
 			<xsl:call-template name="multiFieldIcon">
 				<xsl:with-param name="myLabel" select="$myLabel"/>
 			</xsl:call-template>

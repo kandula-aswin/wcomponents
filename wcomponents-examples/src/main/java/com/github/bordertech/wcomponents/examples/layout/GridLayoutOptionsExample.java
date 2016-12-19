@@ -1,16 +1,18 @@
 package com.github.bordertech.wcomponents.examples.layout;
 
 import com.github.bordertech.wcomponents.ActionEvent;
+import com.github.bordertech.wcomponents.Margin;
 import com.github.bordertech.wcomponents.Request;
+import com.github.bordertech.wcomponents.WAjaxControl;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WCheckBox;
 import com.github.bordertech.wcomponents.WContainer;
 import com.github.bordertech.wcomponents.WFieldLayout;
 import com.github.bordertech.wcomponents.WFieldSet;
-import com.github.bordertech.wcomponents.WHorizontalRule;
 import com.github.bordertech.wcomponents.WNumberField;
 import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.layout.GridLayout;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import com.github.bordertech.wcomponents.validation.Diagnostic;
 import com.github.bordertech.wcomponents.validation.ValidatingAction;
 import com.github.bordertech.wcomponents.validation.WValidationErrors;
@@ -43,8 +45,9 @@ public class GridLayoutOptionsExample extends WContainer {
 
 	/**
 	 * the container for holding the grid layout instances.
+	 * This has been converted to a WPanel to allow it to be an ajax target
 	 */
-	private final WContainer container = new WContainer();
+	private final WPanel container = new WPanel();
 
 	/**
 	 * the number field for retrieving the number of columns required.
@@ -77,6 +80,11 @@ public class GridLayoutOptionsExample extends WContainer {
 	private final WCheckBox cbVisible = new WCheckBox(true);
 
 	/**
+	 * Turn on responsive design.
+	 */
+	private final WCheckBox cbResponsive = new WCheckBox();
+
+	/**
 	 * Creates a GridLayoutExample.
 	 */
 	public GridLayoutOptionsExample() {
@@ -84,9 +92,7 @@ public class GridLayoutOptionsExample extends WContainer {
 		WValidationErrors errors = new WValidationErrors();
 		add(errors);
 		add(getLayoutControls(errors));
-		add(new WHorizontalRule());
 		this.add(container);
-		add(new WHorizontalRule());
 	}
 
 	/**
@@ -129,6 +135,7 @@ public class GridLayoutOptionsExample extends WContainer {
 		layout.addField("Number of Boxes", boxCount);
 
 		layout.addField("Visible", cbVisible);
+		layout.addField("Allow responsive design", cbResponsive);
 
 		// Apply Button
 		WButton apply = new WButton("Apply");
@@ -139,7 +146,10 @@ public class GridLayoutOptionsExample extends WContainer {
 			}
 		});
 
-		fieldSet.add(apply);
+		layout.addField(apply);
+
+		fieldSet.add(new WAjaxControl(apply, container));
+		fieldSet.setMargin(new Margin(0, 0, 12, 0));
 		return fieldSet;
 	}
 
@@ -151,6 +161,11 @@ public class GridLayoutOptionsExample extends WContainer {
 		// Now show an example of the number of different columns
 
 		WPanel gridLayoutPanel = new WPanel();
+
+		if (cbResponsive.isSelected()) {
+			gridLayoutPanel.setHtmlClass(HtmlClassProperties.RESPOND);
+		}
+
 		GridLayout layout = new GridLayout(rowCount.getValue().intValue(), columnCount.getValue()
 				.intValue(),
 				hGap.getValue().intValue(),

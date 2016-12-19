@@ -1,5 +1,6 @@
 package com.github.bordertech.wcomponents;
 
+import com.github.bordertech.wcomponents.util.HtmlSanitizerUtil;
 import com.github.bordertech.wcomponents.util.I18nUtilities;
 import java.io.Serializable;
 import java.text.MessageFormat;
@@ -84,7 +85,11 @@ public class WLabel extends AbstractMutableContainer implements AjaxTarget {
 	 * @return the label text.
 	 */
 	public String getText() {
-		return I18nUtilities.format(null, getComponentModel().text);
+		String text = I18nUtilities.format(null, getComponentModel().text);
+		if (!isEncodeText() && isSanitizeOnOutput()) {
+			return sanitizeOutputText(text);
+		}
+		return text;
 	}
 
 	/**
@@ -217,17 +222,6 @@ public class WLabel extends AbstractMutableContainer implements AjaxTarget {
 	}
 
 	/**
-	 * Sets the client visibility of this label. This method should only ever be called to hide labels which are
-	 * intended for use by screen-readers.
-	 *
-	 * @param hidden true for hidden, false for displayed.
-	 */
-	@Override
-	public void setHidden(final boolean hidden) {
-		super.setHidden(hidden);
-	}
-
-	/**
 	 * @return a String representation of this component, for debugging purposes.
 	 */
 	@Override
@@ -235,6 +229,31 @@ public class WLabel extends AbstractMutableContainer implements AjaxTarget {
 		String text = getText();
 		text = text == null ? "null" : ('"' + text + '"');
 		return toString(text, 1, 1);
+	}
+
+	/**
+	 * Pass true if you need to run the HTML sanitizer on <em>any</em> output. This is only needed if the text is not
+	 * encoded as other cases the output will be XML encoded.
+	 *
+	 * @param sanitize true if output sanitization is required.
+	 */
+	public void setSanitizeOnOutput(final boolean sanitize) {
+		getOrCreateComponentModel().sanitizeOnOutput = sanitize;
+	}
+
+	/**
+	 * @return true if this text area is to be sanitized on output.
+	 */
+	public boolean isSanitizeOnOutput() {
+		return getComponentModel().sanitizeOnOutput;
+	}
+
+	/**
+	 * @param text the output text to sanitize
+	 * @return the sanitized text
+	 */
+	protected String sanitizeOutputText(final String text) {
+		return HtmlSanitizerUtil.sanitizeOutputText(text);
 	}
 
 	// --------------------------------
@@ -289,5 +308,11 @@ public class WLabel extends AbstractMutableContainer implements AjaxTarget {
 		 * The key shortcut that activates the label's <code>forComponent</code>.
 		 */
 		private char accessKey = '\0';
+
+		/**
+		 * Indicates if the label should be HTML sanitized. This only needs to be true if the content is HTML
+		 * <strong>and</strong> of unknown provenance.
+		 */
+		private boolean sanitizeOnOutput;
 	}
 }

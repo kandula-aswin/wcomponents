@@ -2,7 +2,8 @@ package com.github.bordertech.wcomponents;
 
 import com.github.bordertech.wcomponents.layout.UIManager;
 import com.github.bordertech.wcomponents.registry.UIRegistry;
-import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 import com.github.bordertech.wcomponents.util.I18nUtilities;
 import com.github.bordertech.wcomponents.util.SystemException;
 import com.github.bordertech.wcomponents.util.Util;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.logging.Log;
@@ -27,7 +29,7 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * <p>
- * AbstractWComponent is the parent class of all standard WComponents
+ * AbstractWComponent is the parent class of all standard WComponents.
  * </p>
  * <p>
  * WComponent trees (UIs) are intended to be shared between sessions in order to reduce their memory footprint. To
@@ -76,14 +78,6 @@ public abstract class AbstractWComponent implements WComponent {
 	 * ID pattern.
 	 */
 	private static final Pattern ID_PATTERN = Pattern.compile(ID_VALIDATION_PATTERN);
-
-	/**
-	 * This flag controls if component ids should be checked for duplicates. As verifying requires extra resources and
-	 * memory, this can be disabled if required. It is encouraged projects at least have this set true in development
-	 * environment.
-	 */
-	private static final boolean CHECK_DUPLICATE_IDS = Config.getInstance()
-			.getBoolean("bordertech.wcomponents.check.duplicate.ids.enabled", true);
 
 	// ================================
 	// Identification
@@ -312,7 +306,7 @@ public abstract class AbstractWComponent implements WComponent {
 	 * Register this component's ID in its naming context.
 	 */
 	void registerInContext() {
-		if (!CHECK_DUPLICATE_IDS) {
+		if (!ConfigurationProperties.getCheckDuplicateIds()) {
 			return;
 		}
 
@@ -374,10 +368,8 @@ public abstract class AbstractWComponent implements WComponent {
 	}
 
 	/**
-	 * Clear the ID register.
-	 * <p>
-	 * Usually called when a naming context is being painted. This allows the IDs to be refreshed.
-	 * </p>
+	 * Clear the ID register. Usually called when a naming context is being painted. This allows the IDs to be
+	 * refreshed.
 	 */
 	void clearIdRegister() {
 		ComponentModel model = getOrCreateComponentModel();
@@ -394,7 +386,7 @@ public abstract class AbstractWComponent implements WComponent {
 	 * This method will return <code>null</code> if called outside of request processing.
 	 * </p>
 	 *
-	 * @return a map which can be used to temporarily cache data, or null.
+	 * @return a map which can be used to temporarily cache data, or null
 	 */
 	protected Map getScratchMap() {
 		UIContext uic = UIContextHolder.getCurrent();
@@ -506,7 +498,9 @@ public abstract class AbstractWComponent implements WComponent {
 	 * Associates a Velocity template with this component by supplying a resource url.
 	 *
 	 * @param templateUrl the location of the velocity template resource.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	void setTemplate(final String templateUrl) {
 		getOrCreateComponentModel().setTemplateUrl(templateUrl);
 	}
@@ -515,7 +509,9 @@ public abstract class AbstractWComponent implements WComponent {
 	 * Directly associates Velocity mark-up with this component. The mark-up will be used for rendering.
 	 *
 	 * @param markUp Velocity mark-up.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	void setTemplateMarkUp(final String markUp) {
 		getOrCreateComponentModel().setTemplateMarkUp(markUp);
 	}
@@ -524,7 +520,9 @@ public abstract class AbstractWComponent implements WComponent {
 	 * Retrieves Velocity mark-up which has been explicitly associated with this component.
 	 *
 	 * @return the Velocity mark-up, or null if no mark-up has been set explicitly.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	public String getTemplateMarkUp() {
 		return getComponentModel().getTemplateMarkUp();
 	}
@@ -533,7 +531,9 @@ public abstract class AbstractWComponent implements WComponent {
 	 * Retrieves the resource url of the Velocity template associated with this component.
 	 *
 	 * @return the location of the Velocity template resource, or null if there is no template.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	public String getTemplate() {
 		return getComponentModel().getTemplateUrl();
 	}
@@ -547,7 +547,7 @@ public abstract class AbstractWComponent implements WComponent {
 	 * </p>
 	 *
 	 * @param clazz the class to use to retrieve the template.
-	 * @deprecated use {@link #setTemplate(String)}.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
 	@Deprecated
 	void setTemplate(final Class clazz) {
@@ -921,12 +921,12 @@ public abstract class AbstractWComponent implements WComponent {
 	/**
 	 * <p>
 	 * Sets the client visibility of this component. Hidden components take part in event handling and painting, but are
-	 * not visible on the client.
+	 * not <a href="https://html.spec.whatwg.org/multipage/dom.html#palpable-content-2">palpable</a> on the client.
 	 * <p>
 	 *
 	 * @param hidden true for hidden, false for displayed.
 	 */
-	void setHidden(final boolean hidden) {
+	public void setHidden(final boolean hidden) {
 		setFlag(ComponentModel.HIDE_FLAG, hidden);
 	}
 
@@ -1028,7 +1028,6 @@ public abstract class AbstractWComponent implements WComponent {
 	 */
 	@Override
 	public int getTabIndex() {
-		// TODO figure out how this works
 		return 0;
 	}
 
@@ -1206,6 +1205,7 @@ public abstract class AbstractWComponent implements WComponent {
 			// Reset this component's data first.
 			this.removeComponentModel();
 			uic.clearScratchMap(this);
+			uic.clearRequestScratchMap(this);
 
 			// Now reset all descendant components
 			if (children != null) {
@@ -1385,7 +1385,9 @@ public abstract class AbstractWComponent implements WComponent {
 	 *
 	 * @param component the component to add.
 	 * @param tag the tag used to identify the component.
+	 * @deprecated Use {@link WTemplate} instead.
 	 */
+	@Deprecated
 	void add(final WComponent component, final String tag) {
 		add(component);
 		component.setTag(tag);
@@ -1508,7 +1510,10 @@ public abstract class AbstractWComponent implements WComponent {
 	// ----------------------------
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	@Override
 	public String getTag() {
 		ComponentModel model = getComponentModel();
@@ -1517,7 +1522,10 @@ public abstract class AbstractWComponent implements WComponent {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	@Override
 	public void setTag(final String tag) {
 		ComponentModel model = getOrCreateComponentModel();
@@ -1623,7 +1631,6 @@ public abstract class AbstractWComponent implements WComponent {
 
 	/**
 	 * {@inheritDoc}
-	 * @deprecated use setToolTip
 	 */
 	@Override
 	public void setAccessibleText(final String text, final Serializable... args) {
@@ -1633,7 +1640,6 @@ public abstract class AbstractWComponent implements WComponent {
 
 	/**
 	 * {@inheritDoc}
-	 * @deprecated use getToolTip
 	 */
 	@Override
 	public String getAccessibleText() {
@@ -1645,9 +1651,36 @@ public abstract class AbstractWComponent implements WComponent {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void setHtmlClass(final String text, final Serializable... args) {
-		ComponentModel model = getOrCreateComponentModel();
-		model.setHtmlClass(text, args);
+	public void setHtmlClass(final String text) {
+		getOrCreateComponentModel().setHtmlClass(text);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void setHtmlClass(final HtmlClassProperties className) {
+		getOrCreateComponentModel().setHtmlClass(className);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void addHtmlClass(final String className) {
+		if (!Util.empty(className)) {
+			getOrCreateComponentModel().addHtmlClass(className);
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void addHtmlClass(final HtmlClassProperties className) {
+		if (null != className) {
+			getOrCreateComponentModel().addHtmlClass(className);
+		}
 	}
 
 	/**
@@ -1659,10 +1692,35 @@ public abstract class AbstractWComponent implements WComponent {
 		return I18nUtilities.format(null, model.getHtmlClass());
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public Set getHtmlClasses() {
+		ComponentModel model = getComponentModel();
+		return model.getHtmlClasses();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void removeHtmlClass(final String className) {
+		getOrCreateComponentModel().removeHtmlClass(className);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void removeHtmlClass(final HtmlClassProperties className) {
+		getOrCreateComponentModel().removeHtmlClass(className);
+	}
+
 	// ================================
 	// Debugging
 	/**
-	 * Creates a String representation of this component, for debugging purposes.
+	 * Creates a String representation of this component; usually for debugging purposes.
 	 *
 	 * @return a String representation of this component.
 	 */
@@ -1684,10 +1742,10 @@ public abstract class AbstractWComponent implements WComponent {
 	/**
 	 * Creates a String representation of this component, for debugging purposes.
 	 *
-	 * @param details some additional details to display in the output.
-	 * @param childStartIndex the start index of children to include in the output.
-	 * @param childEndIndex the end index of children to include in the output.
-	 * @return a String representation of this component.
+	 * @param details some additional details to display in the output
+	 * @param childStartIndex the start index of children to include in the output
+	 * @param childEndIndex the end index of children to include in the output
+	 * @return a String representation of this component
 	 */
 	final String toString(final String details, final int childStartIndex, final int childEndIndex) {
 		// The simple class name will be empty for anonymous subclasses,
@@ -1889,7 +1947,12 @@ public abstract class AbstractWComponent implements WComponent {
 	 */
 	protected Object writeReplace() throws ObjectStreamException {
 		WComponent top = WebUtilities.getTop(this);
-		String repositoryKey = top.getClass().getName();
+		String repositoryKey;
+		if (top instanceof WApplication) {
+			repositoryKey = ((WApplication) top).getUiVersionKey();
+		} else {
+			repositoryKey = top.getClass().getName();
+		}
 
 		if (UIRegistry.getInstance().isRegistered(repositoryKey)
 				&& top == UIRegistry.getInstance().getUI(repositoryKey)) {

@@ -31,7 +31,7 @@ final class ColumnLayoutRenderer extends AbstractWebXmlRenderer {
 		int vgap = layout.getVgap();
 		int cols = layout.getColumnCount();
 
-		xml.appendTagOpen("ui:columnLayout");
+		xml.appendTagOpen("ui:columnlayout");
 		xml.appendOptionalAttribute("hgap", hgap > 0, hgap);
 		xml.appendOptionalAttribute("vgap", vgap > 0, vgap);
 		xml.appendClose();
@@ -39,7 +39,8 @@ final class ColumnLayoutRenderer extends AbstractWebXmlRenderer {
 		// Column Definitions
 		for (int col = 0; col < cols; col++) {
 			xml.appendTagOpen("ui:column");
-			xml.appendAttribute("width", layout.getColumnWidth(col));
+			int width = layout.getColumnWidth(col);
+			xml.appendOptionalAttribute("width", width > 0, width);
 
 			switch (layout.getColumnAlignment(col)) {
 				case LEFT:
@@ -69,6 +70,6 @@ final class ColumnLayoutRenderer extends AbstractWebXmlRenderer {
 			xml.appendEndTag("ui:cell");
 		}
 
-		xml.appendEndTag("ui:columnLayout");
+		xml.appendEndTag("ui:columnlayout");
 	}
 }

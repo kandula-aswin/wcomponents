@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:include href="wc.common.separator.xsl"/>
 	<!--
 		Transform for WMenuItemGroup. It is strongly recommended that you do not
@@ -17,9 +17,9 @@
 		It is recommended that when grouping menu items of type menuitemradio that 
 		they all be grouped together preceding or following a separator."
 	-->
-	<xsl:template match="ui:menuGroup">
+	<xsl:template match="ui:menugroup">
 		<xsl:call-template name="separator"/>
-		<xsl:apply-templates select="*[not(self::ui:decoratedLabel)]"/>
+		<xsl:apply-templates select="*[not(self::ui:decoratedlabel)]"/>
 		<xsl:call-template name="separator"/>
 	</xsl:template>
 </xsl:stylesheet>

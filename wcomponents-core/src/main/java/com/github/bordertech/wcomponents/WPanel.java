@@ -21,7 +21,7 @@ import java.util.Map;
  * @since 1.0.0
  * @author Yiannis Paschalidis
  */
-public class WPanel extends WContainer implements AjaxTarget, SubordinateTarget, Marginable,
+public class WPanel extends WContainer implements AjaxInternalTrigger, AjaxTarget, SubordinateTarget, Marginable,
 		DropZone {
 
 	/**
@@ -35,14 +35,17 @@ public class WPanel extends WContainer implements AjaxTarget, SubordinateTarget,
 		/**
 		 * An action panel is similar to CHROME but with a different appearance. It is intended to be used once per
 		 * screen to highlight the main area of activity.
+		 * @deprecated v1.2.7 use {@link WSection} instead
 		 */
 		ACTION,
 		/**
 		 * A titled panel which is similar to CHROME but with a fancier border.
+		 * @deprecated v1.2.7 use {@link WSection} instead
 		 */
 		BANNER,
 		/**
 		 * A 'block' type panel has padding around the edges.
+		 * @deprecated v1.2.7 use Type.PLAIN and {@link Margin} instead
 		 */
 		BLOCK,
 		/**
@@ -51,6 +54,7 @@ public class WPanel extends WContainer implements AjaxTarget, SubordinateTarget,
 		BOX,
 		/**
 		 * A panel with a title displayed in a border.
+		 * @deprecated v1.2.7 use {@link WSection} instead
 		 */
 		CHROME,
 		/**
@@ -143,22 +147,6 @@ public class WPanel extends WContainer implements AjaxTarget, SubordinateTarget,
 	 */
 	public void setMode(final PanelMode mode) {
 		getOrCreateComponentModel().mode = mode;
-	}
-
-	/**
-	 * Override preparePaintComponent in order to validate the configuration.
-	 *
-	 * @param request the request being responded to
-	 */
-	@Override
-	protected void preparePaintComponent(final Request request) {
-		UIContext uic = UIContextHolder.getCurrent();
-
-		// Register panel for AJAX
-		if (uic.getUI() != null && getMode() != null) {
-			AjaxHelper.registerComponentTargetItself(getId(), request);
-		}
-
 	}
 
 	/**

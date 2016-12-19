@@ -1,32 +1,3 @@
-/**
- * Provides table pagination functionality.
- *
- * NOTE: the pagination controls consist of a SELECT element and a set of four BUTTON elements. The actual pagination
- * activation is *ALWAYS* done by the SELECT: the BUTTONs are used only to change the selectIndex of the SELECT. Trying
- * to do anything else will lead to a sudden, and possibly permanent, loss of sanity.
- *
- * <p>Three complicating factors to account for with the page select element:</p>
- * <ol>
- *    <li>IE8 does not have event capture, so we have to directly attach change listener to select;</li>
- *    <li>The entire table, including the select, is replaced on AJAX table updates. This means we potentially have to
- *    bootstrap the select over and over;</li>
- *    <li>Change event not fired when value change programmatically, meaning we have to fire the change event manually
- *    in some cases.</li>
- * </ol>
- *
- * @module
- * @requires module:wc/dom/attribute
- * @requires module:wc/dom/event
- * @requires module:wc/dom/focus
- * @requires module:wc/dom/formUpdateManager
- * @requires module:wc/dom/initialise
- * @requires module:wc/dom/shed
- * @requires module:wc/dom/Widget
- * @requires module:wc/ui/ajaxRegion
- * @requires module:wc/ui/ajax/processResponse
- * @requires module:wc/ui/onloadFocusControl
- * @requires module:wc/timers
- */
 define(["wc/dom/attribute",
 		"wc/dom/event",
 		"wc/dom/focus",
@@ -37,9 +8,10 @@ define(["wc/dom/attribute",
 		"wc/ui/ajaxRegion",
 		"wc/ui/ajax/processResponse",
 		"wc/ui/onloadFocusControl",
-		"wc/timers"],
-	/** @param attribute wc/dom/attribute @param event wc/dom/event @param focus wc/dom/focus @param formUpdateManager wc/dom/formUpdateManager @param initialise wc/dom/initialise @param shed wc/dom/shed @param Widget wc/dom/Widget @param ajaxRegion wc/ui/ajaxRegion @param processResponse wc/ui/ajax/processResponse @param onloadFocusControl wc/ui/onloadFocusControl @param timers wc/timers @ignore */
-	function(attribute, event, focus, formUpdateManager, initialise, shed, Widget, ajaxRegion, processResponse, onloadFocusControl, timers) {
+		"wc/timers",
+		"wc/ui/table/common",
+		"wc/i18n/i18n"],
+	function(attribute, event, focus, formUpdateManager, initialise, shed, Widget, ajaxRegion, processResponse, onloadFocusControl, timers, common, i18n) {
 		"use strict";
 
 		/**
@@ -55,24 +27,233 @@ define(["wc/dom/attribute",
 					NEXT: 2,
 					LAST: 3
 				},
-				TABLE_WRAPPER = new Widget("div", "table"),
+				TABLE_WRAPPER = common.WRAPPER,
 				SELECTOR = new Widget("select"),
-				SERVER_MODE_BUTTON = new Widget("input", "wc_table_pag_socbtn", {type: "submit"}),
 				PAGINATION_SELECTOR = SELECTOR.extend("wc_table_pag_select"),
 				RPP_SELECTOR = SELECTOR.extend("wc_table_pag_rpp"),
-				PAGE = new Widget("tbody"),
-				ROW = new Widget("tr", "wc_table_pag_row"),
+				PAGE = common.TBODY,
+				ROW = common.TR.extend("wc_table_pag_row"),
 				PAGINATION_CONTAINER = new Widget("", "wc_table_pag_cont"),
-				TABLE = new Widget("TABLE"),
-				PAGINATION_BUTTON = new Widget("button"),
-				PAGINATION_BUTTON_CLIENT = PAGINATION_BUTTON.extend("", {type: "button"}),
+				PAGINATION_LABEL_WRAPPER,
+				TABLE = common.TABLE,
+				PAGINATION_BUTTON = common.BUTTON.clone(),
 				START_ELEMENT,
 				END_ELEMENT,
 				updateQueue,
-				triggerButtonId;
-
+				triggerButtonId,
+				BUSY = "aria-busy",
+				PAGE_ATTRIB = "data-wc-pages",
+				NUM_BEFORE_AFTER_CURRENT_PAGE_OPTIONS = 4, // this is the number of selections to show around the current page option.
+				NUM_PAGE_OPTIONS = 2 * NUM_BEFORE_AFTER_CURRENT_PAGE_OPTIONS + 3; // This weird number gives us FIRST (4 before selected) SELECTED (4 after selected) LAST.
 			SELECTOR.descendFrom(PAGINATION_CONTAINER);
 			PAGINATION_BUTTON.descendFrom(PAGINATION_CONTAINER);
+
+			function getWrapper(element) {
+				return TABLE_WRAPPER.findAncestor(element);
+			}
+
+			function isAjax(element) {
+				var wrapper = getWrapper(element);
+				if (wrapper) {
+					return wrapper.getAttribute("data-wc-pagemode") === "dynamic";
+				}
+				return false;
+			}
+
+			/**
+			 * Helper for updateSelectOptions and setUpPageSelectOptions.
+			 * @param {int} currentPage The page currently being shown.
+			 * @param {type} totalPages The number of pages in the table.
+			 * @returns {Number} the start point for the page select options' values.
+			 */
+			function getStartValue(currentPage, totalPages) {
+				if (currentPage <= NUM_BEFORE_AFTER_CURRENT_PAGE_OPTIONS) {
+					return 1;
+				}
+				if (totalPages - currentPage <= NUM_BEFORE_AFTER_CURRENT_PAGE_OPTIONS) {
+					return Math.max(totalPages - NUM_PAGE_OPTIONS + 2, 1);
+				}
+				return currentPage - NUM_BEFORE_AFTER_CURRENT_PAGE_OPTIONS;
+			}
+
+			/**
+			 * i18n of the pagination description.
+			 * @param {Element} wrapper a table wrapper
+			 */
+			function translate(wrapper) {
+				PAGINATION_LABEL_WRAPPER = PAGINATION_LABEL_WRAPPER || new Widget("", "wc_table_pag_rows");
+				var labels = PAGINATION_LABEL_WRAPPER.findDescendants(wrapper);
+
+				Array.prototype.forEach.call(labels, function (next) {
+					var rows, rpp, currentPage, i18nString, startIdx, endIdx;
+					if (getWrapper(next) === wrapper) {
+						// we have the correct spans
+						rows = next.getAttribute("data-wc-tablerows");
+						rpp = next.getAttribute("data-wc-tablerpp");
+						currentPage = next.getAttribute("data-wc-tablepage");
+						if (!(rows && rpp)) {
+							return;
+						}
+						rows = parseInt(rows, 10);
+						rpp = parseInt(rpp, 10);
+						currentPage = parseInt(currentPage, 10); // currentpage is 0 based.
+						startIdx = (rpp * currentPage) + 1;
+						if (rpp === 1) {
+							i18nString = i18n.get("table_pagination_label_one", startIdx, rows);
+						}
+						else {
+							endIdx = Math.min(rows, (rpp * currentPage) + rpp);
+							if (startIdx === endIdx) {
+								i18nString = i18n.get("table_pagination_label_one", endIdx, rows);
+							}
+							else {
+								i18nString = i18n.get("table_pagination_label_many", startIdx, endIdx, rows);
+							}
+						}
+						if (i18nString) {
+							next.innerHTML = i18nString;
+						}
+					}
+				});
+			}
+
+			/**
+			 * Translate after Ajax.
+			 * @param {Element} [element] not used.
+			 * @param {Element|DocumentFragment} fragment The DocumentFragment about to be inserted by Ajax or a container element.
+			 */
+			function ajaxSubscriber(element, fragment) {
+				Array.prototype.forEach.call(TABLE_WRAPPER.findDescendants(fragment), translate);
+			}
+
+			/**
+			 * Update the options in the page selector after we change page (client mode only).
+			 *
+			 * @function
+			 * @private
+			 * @param {Element} element The page selector.
+			 * @param {boolean} ignoreOther If true then do not reset the "other" page select (when the table has two).
+			 */
+			function updateSelectOptions(element, ignoreOther) {
+				var currentPage,
+					options,
+					i,
+					nextOption,
+					otherSelect,
+					startVal,
+					totalPages = parseInt(element.getAttribute(PAGE_ATTRIB), 10) - 1; // the data-* attribute is one based.
+
+				if (totalPages < NUM_PAGE_OPTIONS) {
+					// If the total number of options is such that we never re-arrange them then there is nothing to do.
+					return;
+				}
+
+				currentPage = parseInt(element.value, 10);
+				options = element.options;
+
+				element.setAttribute(BUSY, "true");
+				startVal = getStartValue(currentPage, totalPages);
+
+				for (i = 1; i < options.length - 1; ++i) {
+					nextOption = options[i];
+					if (startVal === currentPage) {
+						shed.select(nextOption, true);
+						// Safari bug
+						element.selectedIndex = i;
+					}
+					nextOption.value = startVal++;
+					nextOption.innerHTML = startVal; // already incremented.
+				}
+				element.removeAttribute(BUSY);
+				if (!ignoreOther && (otherSelect = getOtherSelector(element))) {
+					updateSelectOptions(otherSelect, true);
+				}
+			}
+
+			/**
+			 * Add the required options to the pagination control's page selector.
+			 *
+			 * @function
+			 * @private
+			 * @param {Element} [element] Any element defaults to document.body.
+			 */
+			function setUpPageSelectOptions(element) {
+				var container = element || document.body,
+					selectors = PAGINATION_SELECTOR.findDescendants(container);
+
+				Array.prototype.forEach.call(selectors, function(next) {
+					var totalPages,
+						currentPage,
+						startVal,
+						i,
+						isSelected,
+						selectedIndex,
+						option = "";
+
+					if (next.options.length > 1 || ((totalPages = parseInt(next.getAttribute(PAGE_ATTRIB), 10)) === 1)) {
+						return; // we have already processed this. Should never happen but hey!
+					}
+
+					totalPages--; // the data-* attribute is one based.
+
+					currentPage = parseInt(next.value, 10);
+					startVal = getStartValue(currentPage, totalPages);
+
+					isSelected = currentPage === 0;
+					option = "<option value='0'" + (isSelected ? " selected='selected'" : "") + ">1</option>";
+					if (isSelected) {
+						selectedIndex = 0;
+					}
+
+					for (i = 0; i < NUM_PAGE_OPTIONS - 2; i++) {
+						if (i + 1 >= totalPages) {
+							break;
+						}
+						isSelected = currentPage === startVal;
+						option += "<option value='" + startVal + "'" + (isSelected ? " selected='selected'" : "") + ">" + (startVal + 1) + "</option>";
+						if (isSelected) {
+							selectedIndex = i + 1;
+						}
+						startVal++;
+					}
+					isSelected = currentPage === totalPages;
+					option += "<option value='" + totalPages + "'" + (isSelected ? " selected='selected'" : "") + ">" + (totalPages + 1) + "</option>";
+					if (isSelected) {
+						selectedIndex = i + 1;
+					}
+
+					next.innerHTML = option;
+					if (selectedIndex !== undefined) {
+						next.selectedIndex = selectedIndex;
+					}
+					next.removeAttribute(BUSY);
+				});
+			}
+
+			/**
+			 * Given one page selection dropdown find the other (if the table has two).
+			 *
+			 * @function
+			 * @private
+			 * @param {Element} selector a page selection dropdown.
+			 * @returns {?Element} the other pagination dropdown.
+			 */
+			function getOtherSelector(selector) {
+				var i,
+					wrapper = getWrapper(selector),
+					selectors = (PAGINATION_SELECTOR.isOneOfMe(selector) ? PAGINATION_SELECTOR.findDescendants(wrapper) : RPP_SELECTOR.findDescendants(wrapper)); // this could include selectors in nested tables
+				if (selectors && selectors.length > 1) {
+					for (i = 0; i < selectors.length; ++i) {
+						if (selectors[i] === selector) {
+							continue;
+						}
+						if (wrapper === getWrapper(selectors[i])) {
+							return selectors[i];
+						}
+					}
+				}
+				return null;
+			}
 
 			/**
 			 * Gets the TYPE of a given button.
@@ -103,9 +284,10 @@ define(["wc/dom/attribute",
 					buttonType,
 					oldIndex,
 					newIndex,
-					selector = PAGINATION_SELECTOR.findDescendant(paginationContainer);
+					selector = PAGINATION_SELECTOR.findDescendant(paginationContainer),
+					otherSelector;
 
-				if (selector && !shed.isDisabled(selector)) {// don't do anything if selector disabled
+				if (selector && !shed.isDisabled(selector) && selector.getAttribute(BUSY) !== "true") {// don't do anything if selector disabled or busy
 					len = selector.options.length;
 					oldIndex = selector.selectedIndex;
 					buttonType = getButtonType(button);
@@ -123,9 +305,10 @@ define(["wc/dom/attribute",
 					}
 					if (newIndex >= 0 && newIndex !== oldIndex) {
 						selector.selectedIndex = newIndex;
-						if (PAGINATION_BUTTON_CLIENT.isOneOfMe(button)) {  // no point changing page if we are submitting
-							requestPageChange(selector, button);
+						if ((otherSelector = getOtherSelector(selector))) {
+							otherSelector.selectedIndex = newIndex;
 						}
+						requestPageChange(selector, button);
 					}
 				}
 			}
@@ -138,17 +321,7 @@ define(["wc/dom/attribute",
 			 * @param {Element} element The control which was updated leading to the ajax request becoming necessary.
 			 */
 			function requestAjaxLoad(element) {
-				var alias;
-				if ((alias = element.getAttribute("data-wc-ajaxalias"))) {
-					ajaxRegion.register({
-						id: element.id,
-						loads: [alias],
-						alias: alias,
-						oneShot: true,
-						formRegion: alias
-					});
-					ajaxRegion.requestLoad(element);
-				}
+				ajaxRegion.requestLoad(element, common.getAjaxDTO(element, true));
 			}
 
 			/**
@@ -215,16 +388,39 @@ define(["wc/dom/attribute",
 					i++;
 					if (nextHide || nextShow) {
 						if (nextHide) {
-							shed.hide(nextHide, true);
+							shed.hide(nextHide);
 						}
 						if (nextShow) {
-							shed.show(nextShow, true);
+							shed.show(nextShow);
 						}
 					}
 					else {
 						break;
 					}
 				}
+			}
+
+			/**
+			 * Updates the record X of Y displays on client-mode page change.
+			 * @param {Element} wrapper The table wrapper.
+			 * @param {String} startHTML The content for the start span.
+			 * @param {String} endHTML The content for the end span.
+			 */
+			function updateRecordDisplays(wrapper, startHTML, endHTML) {
+				START_ELEMENT = START_ELEMENT || new Widget("span", "wc_table_pag_rowstart");
+				END_ELEMENT = END_ELEMENT || new Widget("span", "wc_table_pag_rowend");
+				Array.prototype.forEach.call(START_ELEMENT.findDescendants(wrapper), function(next) {
+					if (getWrapper(next) === wrapper) {
+						next.innerHTML = "";
+						next.innerHTML = startHTML;
+					}
+				});
+				Array.prototype.forEach.call(END_ELEMENT.findDescendants(wrapper), function(next) {
+					if (getWrapper(next) === wrapper) {
+						next.innerHTML = "";
+						next.innerHTML = endHTML;
+					}
+				});
 			}
 
 			/**
@@ -238,40 +434,31 @@ define(["wc/dom/attribute",
 			 */
 			function changePage(element, button) {
 				var page, rows, rowsPerPage, i, len, requestedPage,
-					paginatedTable, startIdx, startElement, endElement;
+					wrapper,
+					paginatedTable,
+					startIdx;
 
-				if (element.hasAttribute("data-wc-ajaxalias")) {
+				if (isAjax(element)) {
 					triggerButtonId = button.id;
-					// ajaxRegion.requestLoad(element);
 					requestAjaxLoad(element);
 				}
-				else if ((paginatedTable = TABLE.findAncestor(element))) {
-					page = PAGE.findDescendant(paginatedTable, /* immediate= */true);
-					if (page) {
-						rows = ROW.findDescendants(page, true);
-						len = rows.length;
-						requestedPage = element.selectedIndex;
-						rowsPerPage = paginatedTable.getAttribute("data-wc-rpp");
-						for (i = 0; i < len; i++) {  // don't "let i" here
-							if (!shed.isHidden(rows[i])) {
-								break;
-							}
-						}
+				else if ((wrapper = getWrapper(element)) && (paginatedTable = TABLE.findDescendant(wrapper, true)) && (page = PAGE.findDescendant(paginatedTable, true))) {
+					rows = ROW.findDescendants(page, true);
+					len = rows.length;
+					requestedPage = element.value;
+					rowsPerPage = paginatedTable.getAttribute("data-wc-rpp");
 
-						startIdx = requestedPage * rowsPerPage;
-						interleavedShowHide(rows, rowsPerPage, startIdx, i);
-						START_ELEMENT = START_ELEMENT || new Widget("span", "wc_table_pag_rowstart");
-						END_ELEMENT = END_ELEMENT || new Widget("span", "wc_table_pag_rowend");
-						if ((startElement = START_ELEMENT.findDescendant(paginatedTable))) {
-							startElement.innerHTML = "";
-							startElement.innerHTML = startIdx + 1;
-							if ((endElement = END_ELEMENT.findDescendant(paginatedTable))) {
-								endElement.innerHTML = "";
-								endElement.innerHTML = Math.min(startIdx + 1 * rowsPerPage, len);
-							}
+					for (i = 0; i < len; i++) {  // don't "let i" here
+						if (!shed.isHidden(rows[i])) {
+							break;
 						}
-						setPaginationButtonState(element);
 					}
+
+					startIdx = requestedPage * rowsPerPage;
+					interleavedShowHide(rows, rowsPerPage, startIdx, i);
+					updateSelectOptions(element);
+					updateRecordDisplays(wrapper, (startIdx + 1), Math.min(startIdx + 1 * rowsPerPage, len));
+					setPaginationButtonState(element);
 				}
 			}
 
@@ -301,26 +488,25 @@ define(["wc/dom/attribute",
 			 * @param {Event} $event The change event.
 			 */
 			function changeEvent($event) {
-				var element = $event.target;
+				var element = $event.target,
+					alternateSelector;
 
 				if ($event.defaultPrevented || shed.isDisabled(element)) {
 					return;
 				}
 
-				if (SELECTOR.isOneOfMe(element) && element.hasAttribute("data-wc-ajaxalias")) {
+				// if the table has two pagination/rows per page selectors they have to be kept in sync but do not fire
+				// change events on the alternate.
+				if (SELECTOR.isOneOfMe(element) && (alternateSelector = getOtherSelector(element))) {
+					alternateSelector.selectedIndex = element.selectedIndex;
+				}
+
+				if (SELECTOR.isOneOfMe(element) && isAjax(element)) {
 					// dynamic pagination and change rows per page (latter always ajax).
-					// ajaxRegion.requestLoad(element);
 					requestAjaxLoad(element);
 				}
 				else if (PAGINATION_SELECTOR.isOneOfMe(element)) {
-					if (SERVER_MODE_BUTTON.findDescendant(element.parentNode)) {
-						// server mode
-						return;
-					}
-					else {
-						// client mode
-						requestPageChange(element);
-					}
+					requestPageChange(element);
 				}
 			}
 
@@ -390,12 +576,19 @@ define(["wc/dom/attribute",
 			 *
 			 * @function
 			 * @private
-			 * @param {Element} element Not required for this function.
+			 * @param {Element} element The AJAX target element.
 			 * @param {String} action Not required for this function.
 			 * @param {String} triggerId The id of the ajax trigger element.
 			 */
-			function ajaxSubscriber(element, action, triggerId) {
+			function postAjaxSubscriber(element, action, triggerId) {
 				var button, trigger;
+				if (element) {
+					if (TABLE_WRAPPER.isOneOfMe(element)) {
+						setUpPageSelectOptions(element);
+					}
+
+					Array.prototype.forEach.call(TABLE_WRAPPER.findDescendants(element), setUpPageSelectOptions);
+				}
 				if (triggerId && triggerButtonId && (trigger = document.getElementById(triggerId)) && PAGINATION_SELECTOR.isOneOfMe(trigger)) {
 					try {
 						if ((button = document.getElementById(triggerButtonId))) {
@@ -443,7 +636,7 @@ define(["wc/dom/attribute",
 						id,
 						selector;
 
-					container = TABLE_WRAPPER.findAncestor(element);
+					container = getWrapper(element);
 					if (!container) {
 						return;
 					}
@@ -471,13 +664,54 @@ define(["wc/dom/attribute",
 			 * @public
 			 */
 			this.postInit = function() {
-				processResponse.subscribe(ajaxSubscriber, true);
+				setUpPageSelectOptions();
+				processResponse.subscribe(ajaxSubscriber);
+				processResponse.subscribe(postAjaxSubscriber, true);
 				formUpdateManager.subscribe(writeState);
 			};
 
+			/**
+			 * Early initialisation to do i18n of pagination.
+			 * @function module:wc/ui/table/pagination.preInit
+			 * @public
+			 */
+			this.preInit = function() {
+				ajaxSubscriber(null, document.body);
+			};
 		}
 
-		var /** @alias module:wc/ui/table/pagination */ instance = new Pagination();
+		/**
+		 * Provides table pagination functionality.
+		 *
+		 * NOTE: the pagination controls consist of a SELECT element and a set of four BUTTON elements. The actual pagination
+		 * activation is *ALWAYS* done by the SELECT: the BUTTONs are used only to change the selectIndex of the SELECT. Trying
+		 * to do anything else will lead to a sudden, and possibly permanent, loss of sanity.
+		 *
+		 * <p>Three complicating factors to account for with the page select element:</p>
+		 * <ol>
+		 *    <li>IE8 does not have event capture, so we have to directly attach change listener to select;</li>
+		 *    <li>The entire table, including the select, is replaced on AJAX table updates. This means we potentially have to
+		 *    bootstrap the select over and over;</li>
+		 *    <li>Change event not fired when value change programmatically, meaning we have to fire the change event manually
+		 *    in some cases.</li>
+		 * </ol>
+		 *
+		 * @module
+		 * @requires module:wc/dom/attribute
+		 * @requires module:wc/dom/event
+		 * @requires module:wc/dom/focus
+		 * @requires module:wc/dom/formUpdateManager
+		 * @requires module:wc/dom/initialise
+		 * @requires module:wc/dom/shed
+		 * @requires module:wc/dom/Widget
+		 * @requires module:wc/ui/ajaxRegion
+		 * @requires module:wc/ui/ajax/processResponse
+		 * @requires module:wc/ui/onloadFocusControl
+		 * @requires module:wc/timers
+		 * @requires module:wc/ui/table/common
+		 * @requires module:wc/i18n/i18n
+		 */
+		var instance = new Pagination();
 		initialise.register(instance);
 		return instance;
 	});

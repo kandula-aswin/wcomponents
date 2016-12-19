@@ -6,6 +6,7 @@ import com.github.bordertech.wcomponents.Disableable;
 import com.github.bordertech.wcomponents.WComponent;
 import com.github.bordertech.wcomponents.WContainer;
 import com.github.bordertech.wcomponents.WDecoratedLabel;
+import com.github.bordertech.wcomponents.WDialog;
 import com.github.bordertech.wcomponents.WImage;
 import com.github.bordertech.wcomponents.WMenu;
 import com.github.bordertech.wcomponents.WMenuItem;
@@ -14,6 +15,8 @@ import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.WStyledText;
 import com.github.bordertech.wcomponents.WSubMenu;
 import com.github.bordertech.wcomponents.WText;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
+import java.util.Date;
 
 /**
  * This component demonstrates the usage of a {@link WMenu.MenuType#BAR Tree} {@link WMenu}.
@@ -37,7 +40,14 @@ public class MenuBarExample extends WContainer {
 		content.add(new WStyledText("Selected item: ", WStyledText.Type.EMPHASISED));
 		content.add(selectedMenuText);
 		add(content);
-		add(buildMenuBar(selectedMenuText));
+		WMenu bar = buildMenuBar(selectedMenuText);
+
+		add(bar);
+		WDialog dialog = new WDialog(new WText("hello! Generated at: ".concat(new Date().toString())));
+		add(dialog);
+		WMenuItem launchDialogItem = new WMenuItem("Launch Dialog");
+		bar.addMenuItem(launchDialogItem);
+		dialog.setTrigger(launchDialogItem);
 	}
 
 	/**
@@ -67,6 +77,8 @@ public class MenuBarExample extends WContainer {
 
 		// The Colours menu just shows simple text
 		WSubMenu colourMenu = new WSubMenu("Colours");
+		colourMenu.setMode(WSubMenu.MenuMode.LAZY);
+		colourMenu.setAccessKey('C');
 		addMenuItem(colourMenu, "Red", selectedMenuText);
 		addMenuItem(colourMenu, "Green", selectedMenuText);
 		addMenuItem(colourMenu, "Blue", selectedMenuText);
@@ -76,10 +88,12 @@ public class MenuBarExample extends WContainer {
 
 		// The Shapes menu shows grouping of items
 		WSubMenu shapeMenu = new WSubMenu("Shapes");
+		shapeMenu.setAccessKey('S');
 		addMenuItem(shapeMenu, "Circle", selectedMenuText);
 
 		WMenuItemGroup triangleGroup = new WMenuItemGroup("Triangles");
 		shapeMenu.add(triangleGroup);
+		shapeMenu.setMode(WSubMenu.MenuMode.DYNAMIC);
 		addMenuItem(triangleGroup, "Equilateral", selectedMenuText);
 		addMenuItem(triangleGroup, "Isosceles", selectedMenuText);
 		addMenuItem(triangleGroup, "Scalene", selectedMenuText);
@@ -112,9 +126,9 @@ public class MenuBarExample extends WContainer {
 		menu.add(imageMenu);
 
 		WSubMenu sitesMenu = new WSubMenu("External apps");
-		sitesMenu.add(new WMenuItem("DIAC external website", "http://www.ubuntu.com/"));
-		WMenuItem google = new WMenuItem("Google (new window)", "http://www.google.com/");
-		google.setTargetWindow("googleWindow");
+		sitesMenu.add(new WMenuItem("External website", "http://www.example.com/"));
+		WMenuItem google = new WMenuItem("Example (new window)", "http://www.example.com/");
+		google.setTargetWindow("exampleWindow");
 		sitesMenu.add(google);
 		menu.add(sitesMenu);
 
@@ -125,6 +139,16 @@ public class MenuBarExample extends WContainer {
 
 		menu.add(new WMenuItem("Link", "http://www.example.com"));
 		menu.add(new WMenuItem("No Action"));
+
+		WMenuItem itemWithIcon = new WMenuItem("Help");
+		itemWithIcon.setAction(new Action() {
+			@Override
+			public void execute(final ActionEvent event) {
+				// do something
+			}
+		});
+		itemWithIcon.setHtmlClass(HtmlClassProperties.ICON_HELP_BEFORE);
+		menu.add(itemWithIcon);
 
 		return menu;
 	}

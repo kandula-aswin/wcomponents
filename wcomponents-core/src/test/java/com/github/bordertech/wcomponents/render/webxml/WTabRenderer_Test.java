@@ -21,7 +21,7 @@ public class WTabRenderer_Test extends AbstractWebXmlRendererTestCase {
 	@Test
 	public void testRendererCorrectlyConfigured() {
 		WTabSet tabSet = new WTabSet();
-		tabSet.addTab(new WText(""), "", TabMode.SERVER);
+		tabSet.addTab(new WText(""), "", TabMode.DYNAMIC);
 		WTab tab = tabSet.getTab(0);
 
 		Assert.assertTrue("Incorrect renderer supplied",
@@ -38,8 +38,8 @@ public class WTabRenderer_Test extends AbstractWebXmlRendererTestCase {
 
 		assertXpathExists("//ui:tab", tabSet);
 		assertXpathEvaluatesTo(tab.getId(), "//ui:tab/@id", tabSet);
-		assertXpathEvaluatesTo(tabName, "normalize-space(//ui:tab/ui:decoratedLabel)", tabSet);
-		assertXpathEvaluatesTo(tabContent, "normalize-space(//ui:tab/ui:tabContent)", tabSet);
+		assertXpathEvaluatesTo(tabName, "normalize-space(//ui:tab/ui:decoratedlabel)", tabSet);
+		assertXpathEvaluatesTo(tabContent, "normalize-space(//ui:tab/ui:tabcontent)", tabSet);
 		assertXpathEvaluatesTo("true", "//ui:tab/@open", tabSet);
 		assertXpathEvaluatesTo("client", "//ui:tab/@mode", tabSet);
 		assertXpathNotExists("//ui:tab/@disabled", tabSet);
@@ -51,8 +51,8 @@ public class WTabRenderer_Test extends AbstractWebXmlRendererTestCase {
 		tabSet.remove(tab);
 		tab = tabSet.addTab(new WText(tabContent), tabName, TabMode.LAZY);
 		assertXpathEvaluatesTo(tab.getId(), "//ui:tab/@id", tabSet);
-		assertXpathEvaluatesTo(tabName, "normalize-space(//ui:tab/ui:decoratedLabel)", tabSet);
-		assertXpathEvaluatesTo(tabContent, "normalize-space(//ui:tab/ui:tabContent)", tabSet);
+		assertXpathEvaluatesTo(tabName, "normalize-space(//ui:tab/ui:decoratedlabel)", tabSet);
+		assertXpathEvaluatesTo(tabContent, "normalize-space(//ui:tab/ui:tabcontent)", tabSet);
 		assertXpathEvaluatesTo("true", "//ui:tab/@open", tabSet);
 		assertXpathEvaluatesTo("lazy", "//ui:tab/@mode", tabSet);
 		assertXpathNotExists("//ui:tab/@disabled", tabSet);
@@ -67,7 +67,7 @@ public class WTabRenderer_Test extends AbstractWebXmlRendererTestCase {
 
 		tabSet.remove(tab);
 		tab = tabSet.addTab(new WText(tabContent), tabName, TabMode.SERVER, 'X');
-		assertXpathEvaluatesTo("server", "//ui:tab/@mode", tabSet);
+		assertXpathEvaluatesTo("dynamic", "//ui:tab/@mode", tabSet);
 		assertXpathEvaluatesTo(String.valueOf(tab.getAccessKey()), "//ui:tab/@accessKey", tabSet);
 
 		tabSet.remove(tab);

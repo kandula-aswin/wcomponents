@@ -26,13 +26,12 @@ final class WMultiSelectRenderer extends AbstractWebXmlRenderer {
 		WMultiSelect listBox = (WMultiSelect) component;
 		XmlStringBuilder xml = renderContext.getWriter();
 		String dataKey = listBox.getListCacheKey();
-		boolean encode = listBox.getDescEncode();
 		boolean readOnly = listBox.isReadOnly();
 		int rows = listBox.getRows();
 		int min = listBox.getMinSelect();
 		int max = listBox.getMaxSelect();
 
-		xml.appendTagOpen("ui:listBox");
+		xml.appendTagOpen("ui:listbox");
 		xml.appendAttribute("id", component.getId());
 		xml.appendOptionalAttribute("class", component.getHtmlClass());
 		xml.appendOptionalAttribute("track", component.isTracking(), "true");
@@ -65,18 +64,18 @@ final class WMultiSelectRenderer extends AbstractWebXmlRenderer {
 
 					for (Object nestedOption : ((OptionGroup) option).getOptions()) {
 						renderOption(listBox, nestedOption, optionIndex++, xml, selections,
-								renderSelectionsOnly, encode);
+								renderSelectionsOnly);
 					}
 
 					xml.appendEndTag("ui:optgroup");
 				} else {
 					renderOption(listBox, option, optionIndex++, xml, selections,
-							renderSelectionsOnly, encode);
+							renderSelectionsOnly);
 				}
 			}
 		}
 
-		xml.appendEndTag("ui:listBox");
+		xml.appendEndTag("ui:listbox");
 	}
 
 	/**
@@ -88,12 +87,10 @@ final class WMultiSelectRenderer extends AbstractWebXmlRenderer {
 	 * @param html the XmlStringBuilder to paint to.
 	 * @param selections the list of selected options.
 	 * @param renderSelectionsOnly true to only render selected options, false to render all options.
-	 * @param encode true if the option description should be encoded, false if not.
 	 */
 	private void renderOption(final WMultiSelect listBox, final Object option,
 			final int optionIndex, final XmlStringBuilder html,
-			final List<?> selections, final boolean renderSelectionsOnly,
-			final boolean encode) {
+			final List<?> selections, final boolean renderSelectionsOnly) {
 		boolean selected = selections.contains(option);
 
 		if (selected || !renderSelectionsOnly) {
@@ -105,7 +102,7 @@ final class WMultiSelectRenderer extends AbstractWebXmlRenderer {
 			html.appendAttribute("value", code);
 			html.appendOptionalAttribute("selected", selected, "true");
 			html.appendClose();
-			html.append(desc, encode);
+			html.appendEscaped(desc);
 			html.appendEndTag("ui:option");
 		}
 	}

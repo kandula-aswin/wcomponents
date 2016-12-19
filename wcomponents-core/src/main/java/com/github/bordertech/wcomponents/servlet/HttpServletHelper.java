@@ -9,7 +9,7 @@ import com.github.bordertech.wcomponents.UserAgentInfo;
 import com.github.bordertech.wcomponents.WComponent;
 import com.github.bordertech.wcomponents.container.AbstractContainerHelper;
 import com.github.bordertech.wcomponents.container.ResponseCacheInterceptor.CacheType;
-import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.SystemException;
 import com.github.bordertech.wcomponents.util.Util;
 import java.io.IOException;
@@ -102,14 +102,14 @@ public class HttpServletHelper extends AbstractContainerHelper {
 		this.httpServletRequest = httpServletRequest;
 		this.httpServletResponse = httpServletResponse;
 
-		dataRequest = httpServletRequest.getParameter(WServlet.DATA_LIST_PARAM_NAME) != null;
+		Map<String, String[]> parameters = ServletUtil.getRequestParameters(httpServletRequest);
+		dataRequest = parameters.get(WServlet.DATA_LIST_PARAM_NAME) != null;
 
-		String target = httpServletRequest.getParameter(WServlet.AJAX_TRIGGER_PARAM_NAME);
+		String[] target = parameters.get(WServlet.AJAX_TRIGGER_PARAM_NAME);
 		if (target == null) {
-			target = httpServletRequest.getParameter(WServlet.TARGET_ID_PARAM_NAME);
+			target = parameters.get(WServlet.TARGET_ID_PARAM_NAME);
 		}
-
-		this.targetComponentId = target;
+		this.targetComponentId = target == null ? null : target[0];
 	}
 
 	/**
@@ -276,7 +276,7 @@ public class HttpServletHelper extends AbstractContainerHelper {
 	 */
 	@Override
 	protected void redirectForLogout() {
-		String url = Config.getInstance().getString("bordertech.wcomponents.logout.url", null);
+		String url = ConfigurationProperties.getLogoutUrl();
 
 		if (Util.empty(url)) {
 			LOG.warn("No logout URL specified");
@@ -359,6 +359,10 @@ public class HttpServletHelper extends AbstractContainerHelper {
 			httpServletResponse.setHeader("Pragma", "no-cache");
 			httpServletResponse.setHeader("Expires", "-1");
 		}
+		// This is to prevent clickjacking. It can also be set to "DENY" to prevent embedding in a frames at all or
+		// "ALLOW-FROM uri" to allow embedding in a frame within a particular site.
+		// The default will allow WComponents applications in a frame on the same origin.
+		httpServletResponse.setHeader("X-Frame-Options", "SAMEORIGIN");
 	}
 
 	/**

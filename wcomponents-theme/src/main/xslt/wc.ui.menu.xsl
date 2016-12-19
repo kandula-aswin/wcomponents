@@ -1,17 +1,18 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
+	<xsl:import href="wc.common.attributeSets.xsl"/>
 	<xsl:import href="wc.ui.menu.n.hasStickyOpen.xsl"/>
 	<xsl:import href="wc.ui.menu.n.menuRoleIsSelectable.xsl"/>
 	<xsl:import href="wc.ui.menu.n.menuTabIndexHelper.xsl"/>
-	<xsl:import href="wc.common.ajax.xsl"/>
 	<xsl:import href="wc.common.inlineError.xsl"/>
 	<xsl:import href="wc.common.invalid.xsl"/>
 	<xsl:import href="wc.common.hField.xsl"/>
+	<xsl:import href="wc.common.n.className.xsl"/>
 	<!--
 		Transform for WMenu. Makes bar, tree and column menus.
 
 		Child Elements
 		* ui:submenu
-		* ui:menuItem
+		* ui:menuitem
 
 		Menus may not be nested.
 	-->
@@ -21,34 +22,22 @@
 		<xsl:variable name="isError" select="key('errorKey',$id)"/>
 
 		<xsl:variable name="isBarFlyout">
-			<xsl:if test="$type='bar' or $type='flyout'">
-				<xsl:number value="1"/>
-			</xsl:if>
+			<xsl:choose>
+				<xsl:when test="$type eq 'bar' or $type eq 'flyout'">
+					<xsl:number value="1"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:number value="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
 
-		<xsl:element name="div">
-			<xsl:attribute name="id">
-				<xsl:value-of select="$id"/>
-			</xsl:attribute>
-			<xsl:call-template name="ajaxTarget"/>
-
-			<xsl:apply-templates select="ui:margin"/>
-			<!--
-				NOTES on class:
-				We would like to be able to define all menu appearance and behaviour
-				solely using role. That is not, however, possible without a lot of
-				code duplication. This gets particularly heinous in the CSS since there
-				is no sensible reuse mechanism. So we base some instrinsic stuff on
-				the "menu" class and the important stuff on roles.
-			-->
-			<xsl:attribute name="class">
-				<xsl:text>menu </xsl:text>
-				<xsl:value-of select="$type"/>
-				<xsl:if test="@class">
-					<xsl:value-of select="concat(' ', @class)"/>
-				</xsl:if>
-			</xsl:attribute>
-
+		<div>
+			<xsl:call-template name="commonAttributes">
+				<xsl:with-param name="class">
+					<xsl:if test="number($isBarFlyout) eq 1">wc_menu_bar</xsl:if>
+				</xsl:with-param>
+			</xsl:call-template>
 			<!--
 				attribute role
 				ARIA specifies three menu roles: tree, menu and menubar. The difference is in the
@@ -57,10 +46,7 @@
 			-->
 			<xsl:attribute name="role">
 				<xsl:choose>
-					<xsl:when test="$type='tree'">
-						<xsl:text>tree</xsl:text>
-					</xsl:when>
-					<xsl:when test="$isBarFlyout=1">
+					<xsl:when test="number($isBarFlyout) eq 1">
 						<xsl:text>menubar</xsl:text>
 					</xsl:when>
 					<xsl:otherwise>
@@ -68,38 +54,23 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</xsl:attribute>
+			
 			<xsl:if test="@selectMode">
-				<xsl:choose>
-					<xsl:when test="$type='tree'">
-						<xsl:attribute name="aria-multiselectable">
-							<xsl:choose>
-								<xsl:when test="@selectMode='multiple'">
-									<xsl:copy-of select="$t"/>
-								</xsl:when>
-								<xsl:otherwise>
-									<xsl:text>false</xsl:text>
-								</xsl:otherwise>
-							</xsl:choose>
-						</xsl:attribute>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:attribute name="data-wc-selectmode">
-							<xsl:value-of select="@selectMode"/>
-						</xsl:attribute>
-					</xsl:otherwise>
-				</xsl:choose>
+				<xsl:attribute name="data-wc-selectmode">
+					<xsl:value-of select="@selectMode"/>
+				</xsl:attribute>
 			</xsl:if>
+
 			<xsl:if test="$isError">
 				<xsl:call-template name="invalid"/>
 			</xsl:if>
-			<xsl:call-template name="hideElementIfHiddenSet"/>
 
-			<xsl:apply-templates select="*"/>
+			<xsl:apply-templates select="*[not(self::ui:margin)]"/>
+
 			<xsl:call-template name="inlineError">
 				<xsl:with-param name="errors" select="$isError"/>
 			</xsl:call-template>
-			<xsl:call-template name="hField"/>
-		</xsl:element>
+		</div>
 	</xsl:template>
 
 	<!--

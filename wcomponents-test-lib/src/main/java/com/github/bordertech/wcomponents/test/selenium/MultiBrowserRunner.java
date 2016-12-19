@@ -1,12 +1,16 @@
 package com.github.bordertech.wcomponents.test.selenium;
 
-import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.test.selenium.driver.WebDriverType;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
+import com.github.bordertech.wcomponents.util.SystemException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -39,16 +43,6 @@ public class MultiBrowserRunner extends Suite {
 	private final List<Runner> runners = new ArrayList<>();
 
 	/**
-	 * The configuration parameter key for which browsers to use.
-	 */
-	private static final String BROWSERS_PARAM_KEY = "bordertech.wcomponents.test.selenium.browsers";
-
-	/**
-	 * The configuration parameter key for whether to run the browser tests in parallel.
-	 */
-	private static final String RUN_PARALLEL_PARAM_KEY = "bordertech.wcomponents.test.selenium.runParallel";
-
-	/**
 	 * Only called reflectively. Do not use programmatically.
 	 *
 	 * @param clazz the test case to run.
@@ -56,13 +50,36 @@ public class MultiBrowserRunner extends Suite {
 	 */
 	public MultiBrowserRunner(final Class<?> clazz) throws InitializationError {
 		super(clazz, Collections.<Runner>emptyList());
-		String[] browsers = Config.getInstance().getStringArray(BROWSERS_PARAM_KEY);
 
-		for (int i = 0; i < browsers.length; i++) {
-			runners.add(new TestClassRunnerForBrowser(getTestClass().getJavaClass(), browsers, i));
+		final String testClassName = getTestClass().getName();
+
+		String[] drivers = ConfigurationProperties.getTestSeleniumMultiBrowserDrivers(testClassName);
+
+		//Configuration error - no drivers defined.
+		if (ArrayUtils.isEmpty(drivers)) {
+			throw new SystemException("Cannot run the MultiBrowserRunner without drivers defined in default param ["
+					+ ConfigurationProperties.TEST_SELENIUM_MULTI_BROWSER_DRIVERS + "] or test-specific param [" + ConfigurationProperties.TEST_SELENIUM_MULTI_BROWSER_DRIVERS + "." + testClassName + "]");
 		}
 
-		boolean runParallel = Config.getInstance().getBoolean(RUN_PARALLEL_PARAM_KEY, false);
+		boolean runParallel = ConfigurationProperties.getTestSeleniumMultiBrowserDriverParallel();
+
+		for (String driverClassName : drivers) {
+			try {
+				Class<?> driverClass = Class.forName(driverClassName);
+				if (!WebDriverType.class.isAssignableFrom(driverClass)) {
+					throw new SystemException("parameter defined WebDriverType does not implement WebDriverType inteface. driverClass=["
+							+ driverClass + "]");
+				}
+
+				WebDriverType driverType = ((Class<WebDriverType>) driverClass).newInstance();
+				//Reuse the driver between tests if not parallel.
+				String driverId = runParallel ? UUID.randomUUID().toString() : null;
+				runners.add(new TestClassRunnerForBrowser(getTestClass().getJavaClass(), driverType, driverId));
+			} catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+				throw new SystemException("class parameter defined WebDriverType could not be instantiated. driverClassName=["
+						+ driverClassName + "]", ex);
+			}
+		}
 
 		if (runParallel) {
 			setScheduler(new ThreadPoolScheduler());
@@ -83,28 +100,29 @@ public class MultiBrowserRunner extends Suite {
 	private static final class TestClassRunnerForBrowser extends BlockJUnit4ClassRunner {
 
 		/**
-		 * The index of the browser being tested.
+		 * The unique id for this driver "Session".
 		 */
-		private final int parameterIndex;
+		private final String driverId;
 
 		/**
-		 * The complete set of browsers which will be tested.
+		 * The WebDriverType to run the test.
 		 */
-		private final String[] browsers;
+		private final WebDriverType driverType;
 
 		/**
 		 * Creates a TestClassRunnerForBrowser.
 		 *
 		 * @param type the test class to run.
-		 * @param browsers te complete set of browsers which will be tested.
-		 * @param parameterIndex the browser index number.
+		 * @param driverType the WebDriverType for this test.
+		 * @param driverId the unique ID for this driver "session".
 		 * @throws InitializationError if there is an error creating the runner.
 		 */
-		private TestClassRunnerForBrowser(final Class<?> type, final String[] browsers, final int parameterIndex) throws
+		private TestClassRunnerForBrowser(final Class<?> type, final WebDriverType driverType, final String driverId
+		) throws
 				InitializationError {
 			super(type);
-			this.browsers = browsers;
-			this.parameterIndex = parameterIndex;
+			this.driverType = driverType;
+			this.driverId = driverId;
 		}
 
 		/**
@@ -114,9 +132,11 @@ public class MultiBrowserRunner extends Suite {
 		public Object createTest() throws Exception {
 			Object test = super.createTest();
 
-			if (test instanceof WComponentSeleniumTestCase) {
-				((WComponentSeleniumTestCase) test).setBrowser(browsers[parameterIndex]);
+			if (!(test instanceof WComponentSeleniumTestCase)) {
+				throw new SystemException("MultiBrowserRunner cannot be used for test that does not extend WComponentSeleniumTestCase."
+						+ " test class: " + test.getClass().getName());
 			}
+			((WComponentSeleniumTestCase) test).setDriver(driverType, driverId);
 
 			return test;
 		}
@@ -126,7 +146,7 @@ public class MultiBrowserRunner extends Suite {
 		 */
 		@Override
 		protected String getName() {
-			return String.format("%s", browsers[parameterIndex]);
+			return super.getName() + getTestDetails();
 		}
 
 		/**
@@ -134,7 +154,7 @@ public class MultiBrowserRunner extends Suite {
 		 */
 		@Override
 		protected String testName(final FrameworkMethod method) {
-			return String.format("%s[%s]", method.getName(), browsers[parameterIndex]);
+			return String.format("%s[%s]", method.getName(), getTestDetails());
 		}
 
 		@Override
@@ -148,6 +168,13 @@ public class MultiBrowserRunner extends Suite {
 		@Override
 		protected Statement classBlock(final RunNotifier notifier) {
 			return childrenInvoker(notifier);
+		}
+
+		/**
+		 * @return the details of the test as a String to suffix on the name.
+		 */
+		private String getTestDetails() {
+			return "." + driverType.getDriverTypeName() + ":" + driverId;
 		}
 	}
 

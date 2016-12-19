@@ -1,76 +1,72 @@
 /* wc.ui.panel.scss */
-@import 'wc.ui.panel_vars.scss';
+@import 'mixins-common';
+// Type.ACTION
+@import 'wc.ui.panel.action';
+// Also see wc.common.section
 
-.panel[aria-busy='true'] {
-	min-height: $line-size; // always allow room for a loading indicator
+// Type.BLOCK
+// If you are reading this with knowledge of HTML and CSS you are possibly thinking, 'divs are blocks so surely WPanel
+// type 'block' should do nothing?' But that would be too easy. A WPanel with no type is just a container. Type
+// BLOCK does (according to the javadoc): 'A 'block' type panel has padding around the edges.'
+.wc-panel-type-block {
+	padding: $wc-gap-normal;
 }
 
-// The flowing divs in flowlayout and border layout. This is here for lame browsers and is rudimentary support only.
-// The max-width is to ensure long non-wrapping content which has word-break applied (read-only input components) will
-// honour that wrapping in a flow layout.
-div {
-	.flowLayout > &,
-	.wc_borderLayout_middle > & {
-		display: inline-block;
-		max-width: 100%;
-	}
+// Type.BOX:
+// 'A box panel has a border.' It has a pad to remove the content from the border.
+.wc-panel-type-box,
+.wc-panel-type-feature,
+footer {
+	@include padded-box;
 }
 
-// BORDER LAYOUT
-.wc_borderLayout_middle {
-	@include flex($justify: space-between);
-	> div {
-		@include flex-grow(1);
-	}
+// Type.CHROME
+@import 'wc.ui.panel.chrome';
+// Also see wc.common.section
 
-	> .center {
-		@include flex-grow(2);
-		text-align: $preferred-alignment; // NOTE: the text align here is to overrule the generic .center class used in column alignment, table col alignment, flowLayout etc.
-
-		&:first-child,
-		&:last-child {
-			@include flex-grow(3);
-		}
-	}
-
-	> .east {
-		@include flex-justify-content(flex-end);
-		text-align: right;
+// Type.FEATURE
+// 'The feature panel is highlighted by a background colour and border.'
+// The colours can be omitted by setting $wc-ui-color-panel-feature-foreground to -1
+@if ($wc-ui-color-panel-feature-foreground != -1) {
+	.wc-panel-type-feature {
+		background-color: $wc-ui-color-panel-feature-background;
+		color: $wc-ui-color-panel-feature-foreground;
 	}
 }
 
-
-// FLOW LAYOUT
-// flowLayout puts elements into a vertical or horizontal flow.
-.flowLayout {
-	@include flex($wrap: wrap, $justify: flex-start, $align-items: flex-start, $align-content: flex-start);
-
-	&.baseline {
-		@include flex-align-items(baseline);
+// Type.FOOTER
+@if ($wc-ui-color-panel-footer-foreground != -1) {
+	footer {
+		background-color: $wc-ui-color-panel-footer-background;
+		color: $wc-ui-color-panel-footer-foreground;
 	}
+}
 
-	&.bottom {
-		@include flex-align-items(flex-end);
-	}
+// Type HEADER
+@import 'wc.ui.panel.header';
 
-	&.center {
-		@include flex-justify-content(center);
-		text-align: $preferred-alignment;
-	}
-
-	&.middle { // vertical align middle of the flow
-		@include flex-align-items(center);
-	}
-
-	&.right {
-		@include flex-justify-content(flex-end);
-	}
-
-	&.vertical {
-		&,
-		& > div {
-			display: block;
+// Reduce padded panels on narrow viewports.
+@if ($wc-gap-reduce-when-narrow != -1) {
+	@include respond-phonelike {
+		.wc-panel-type-block,
+		.wc-panel-type-box,
+		.wc-panel-type-feature,
+		footer {
+			padding: $wc-phone-gap-normal;
 		}
 	}
 }
-/* end wc.ui.panel.scss */
+
+// WPanel layouts
+// BorderLayout
+@import 'wc.ui.borderLayout';
+// ColumnLayout
+@import 'wc.common.rowColumn';
+// FlowLayout
+@import 'wc.ui.flowLayout';
+// GridLayout
+@import 'wc.ui.gridLayout';
+// ListLayout
+@import 'wc.ui.listLayout';
+// Cells in all except BorderLayout
+@import 'wc.common.cell';

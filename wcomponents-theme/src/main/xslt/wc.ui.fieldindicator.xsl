@@ -1,7 +1,8 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
+	<xsl:import href="wc.common.n.className.xsl"/>
 	<!--
-		Transform for ui:fieldIndicator which is output of WFieldErrorIndicator and
+		Transform for ui:fieldindicator which is output of WFieldErrorIndicator and
 		WFieldWarningIndicator. This is normally output to provide inline messaging in
 		a WField.
 	
@@ -21,28 +22,19 @@
 		indicator within the field so that it is in a place appropriate to the form
 		component for which it is providing feedback.
 	
-	-->
-	<xsl:template match="ui:fieldIndicator">
-		<xsl:element name="ul">
-			<xsl:attribute name="id">
-				<xsl:value-of select="@id"/>
-			</xsl:attribute>
-			<xsl:attribute name="class">
-				<xsl:value-of select="@type"/>
-				<xsl:if test="@class">
-					<xsl:value-of select="concat(' ', @class)"/>
-				</xsl:if>
-			</xsl:attribute>
-			<xsl:apply-templates/>
-		</xsl:element>
-	</xsl:template>
-	<!--
 		Currently there is a consistency problem with the use of WFieldErrorIndicator
 		which results in a possible double-up of error messages. Therefore we
-		currently do not output ui:fieldIndicator of type 'error' and output
+		currently do not output ui:fieldindicator of type 'error' and output
 		the ui:error children of WValidationErrors instead.
 
 		This is under investigation.
 	-->
-	<xsl:template match="ui:fieldIndicator[@type='error']"/>
+	<xsl:template match="ui:fieldindicator">
+		<xsl:if test="not(@type eq 'error')">
+			<span id="{@id}">
+				<xsl:call-template name="makeCommonClass"/>
+				<xsl:apply-templates/>
+			</span>
+		</xsl:if> 
+	</xsl:template>
 </xsl:stylesheet>

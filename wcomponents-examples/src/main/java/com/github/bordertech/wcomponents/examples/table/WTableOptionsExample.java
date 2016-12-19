@@ -7,6 +7,7 @@ import com.github.bordertech.wcomponents.SimpleBeanBoundTableModel.LevelDetails;
 import com.github.bordertech.wcomponents.WBeanContainer;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WCheckBox;
+import com.github.bordertech.wcomponents.WContainer;
 import com.github.bordertech.wcomponents.WDateField;
 import com.github.bordertech.wcomponents.WDefinitionList;
 import com.github.bordertech.wcomponents.WField;
@@ -24,8 +25,10 @@ import com.github.bordertech.wcomponents.WTableColumn;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.WTextField;
 import com.github.bordertech.wcomponents.examples.table.PersonBean.TravelDoc;
+import com.github.bordertech.wcomponents.subordinate.And;
 import com.github.bordertech.wcomponents.subordinate.Equal;
 import com.github.bordertech.wcomponents.subordinate.Hide;
+import com.github.bordertech.wcomponents.subordinate.NotEqual;
 import com.github.bordertech.wcomponents.subordinate.Rule;
 import com.github.bordertech.wcomponents.subordinate.Show;
 import com.github.bordertech.wcomponents.subordinate.WSubordinateControl;
@@ -41,7 +44,7 @@ import java.util.Set;
  * @author Jonathan Austin
  * @since 1.0.0
  */
-public class WTableOptionsExample extends WBeanContainer {
+public class WTableOptionsExample extends WContainer {
 
 	/**
 	 * Messages.
@@ -105,6 +108,10 @@ public class WTableOptionsExample extends WBeanContainer {
 	 */
 	private final WNumberField numRowsPerPage = new WNumberField();
 	/**
+	 * Location of pagination controls.
+	 */
+	private final EnumerationRadioButtonSelect<WTable.PaginationLocation> paginationControlsLocation;
+	/**
 	 * Striping Options.
 	 */
 	private final EnumerationRadioButtonSelect<WTable.StripingType> rbsStriping;
@@ -139,6 +146,26 @@ public class WTableOptionsExample extends WBeanContainer {
 	private final WCheckBox chbRowsPerPageOptions = new WCheckBox();
 
 	/**
+	 * Caption text.
+	 */
+	private final WTextField tfCaption = new WTextField();
+
+	/**
+	 * Sub row select toggle.
+	 */
+	private final WCheckBox cbToggleSubRowSelection = new WCheckBox();
+
+	/**
+	 * Use row headers.
+	 */
+	private final WCheckBox cbHasRowHeaders = new WCheckBox();
+
+	/**
+	 * Turn on responsive tables using the CSS class "wc-respond".
+	 */
+	private final WCheckBox cbEnableRespond = new WCheckBox();
+
+	/**
 	 * Construct the example.
 	 */
 	public WTableOptionsExample() {
@@ -152,6 +179,7 @@ public class WTableOptionsExample extends WBeanContainer {
 		rbsSorting = createRadioButtonGroup(WTable.SortMode.values());
 		numRowsPerPage.setNumber(DEFAULT_ROWS_PER_PAGE);
 		numRowsPerPage.setMinValue(1);
+		paginationControlsLocation = createRadioButtonGroup(WTable.PaginationLocation.values());
 
 		columnOrder.setSelected(columnOrder.getOptions());
 		columnOrder.setMinSelect(1);
@@ -166,28 +194,63 @@ public class WTableOptionsExample extends WBeanContainer {
 		layout.setLabelWidth(30);
 
 		layout.addField("Select Mode", rbsSelect);
-		layout.addField("Select All Type", rbsSelectAll);
+		WField fieldSelectAll = layout.addField("Select All Type", rbsSelectAll);
+		/* show and hide the row selection sub-options */
+		WSubordinateControl subShowSelectOptions = new WSubordinateControl();
+		Rule rule = new Rule();
+		rule.setCondition(new Equal(rbsSelect, WTable.SelectMode.MULTIPLE));
+		rule.addActionOnTrue(new Show(fieldSelectAll));
+		rule.addActionOnFalse(new Hide(fieldSelectAll));
+		subShowSelectOptions.addRule(rule);
+		add(subShowSelectOptions);
+
 		layout.addField("Expand Mode", rbsExpand);
 		layout.addField("Paging Mode", rbsPaging);
 		layout.addField("Striping Type", rbsStriping);
 		layout.addField("Separator Type", rbsSeparator);
 		layout.addField("Sort Mode", rbsSorting);
 		layout.addField("Show col headers", showColHeaders);
-		layout.addField("Expand all", expandAll);
+		WField fieldExpandAll = layout.addField("Expand all", expandAll);
+		/* show and hide the row expansion sub-options */
+		WSubordinateControl subShowExpandOptions = new WSubordinateControl();
+		rule = new Rule();
+		rule.setCondition(new Equal(rbsExpand, WTable.ExpandMode.NONE));
+		rule.addActionOnTrue(new Hide(fieldExpandAll));
+		rule.addActionOnFalse(new Show(fieldExpandAll));
+		subShowExpandOptions.addRule(rule);
+		add(subShowExpandOptions);
+
+		WField fieldToggleSubRowSelection = layout.addField("Parent row selection controls sub row selection", cbToggleSubRowSelection);
+		/* show/hide sub-row selection options */
+		WSubordinateControl subToggler = new WSubordinateControl();
+		rule = new Rule();
+		rule.setCondition(new And(new Equal(rbsSelect, WTable.SelectMode.MULTIPLE), new NotEqual(rbsExpand, WTable.ExpandMode.NONE)));
+		rule.addActionOnTrue(new Show(fieldToggleSubRowSelection));
+		rule.addActionOnFalse(new Hide(fieldToggleSubRowSelection));
+		subToggler.addRule(rule);
+		add(subToggler);
+
 		layout.addField("Editable", chbEditable);
 		layout.addField("Column order", columnOrder);
 		WField fieldRows = layout.addField("Rows per page", numRowsPerPage);
 		WField fieldRowsOptions = layout.addField("Rows per page options", chbRowsPerPageOptions);
-
+		WField fieldPaginationLocation = layout.addField("Location of pagination controls", paginationControlsLocation);
+		/* show/hide pagination options */
 		WSubordinateControl pagRowsPerPage = new WSubordinateControl();
-		Rule rule = new Rule();
+		rule = new Rule();
 		rule.setCondition(new Equal(rbsPaging, WTable.PaginationMode.NONE));
 		rule.addActionOnTrue(new Hide(fieldRows));
 		rule.addActionOnTrue(new Hide(fieldRowsOptions));
+		rule.addActionOnTrue(new Hide(fieldPaginationLocation));
 		rule.addActionOnFalse(new Show(fieldRows));
 		rule.addActionOnFalse(new Show(fieldRowsOptions));
+		rule.addActionOnFalse(new Show(fieldPaginationLocation));
 		pagRowsPerPage.addRule(rule);
 		add(pagRowsPerPage);
+
+		layout.addField("Caption", tfCaption);
+		layout.addField("Use row headers", cbHasRowHeaders);
+		layout.addField("Enable responsive design for phones", cbEnableRespond);
 
 		// Apply Button
 		WButton apply = new WButton("Apply");
@@ -258,14 +321,13 @@ public class WTableOptionsExample extends WBeanContainer {
 		table.setBeanProperty(".");
 
 		// Setup model with column properties
-		SimpleBeanBoundTableModel model = new SimpleBeanBoundTableModel(
+		MyBeanBoundTableModel model = new MyBeanBoundTableModel(
 				new String[]{"firstName", "lastName",
 					"dateOfBirth"});
 		model.setSelectable(true);
 		model.setEditable(true);
 		model.setComparator(0, SimpleBeanBoundTableModel.COMPARABLE_COMPARATOR);
 		model.setComparator(1, SimpleBeanBoundTableModel.COMPARABLE_COMPARATOR);
-
 		table.setTableModel(model);
 
 		return table;
@@ -287,9 +349,8 @@ public class WTableOptionsExample extends WBeanContainer {
 		LevelDetails level1 = new LevelDetails("documents", TravelDocPanel.class);
 
 		// Setup model with column properties and the "expandable" level
-		SimpleBeanBoundTableModel model = new SimpleBeanBoundTableModel(
-				new String[]{"firstName", "lastName",
-					"dateOfBirth"}, level1);
+		MyBeanBoundTableModel model = new MyBeanBoundTableModel(new String[]{"firstName", "lastName", "dateOfBirth"},
+				level1);
 
 		model.setSelectable(true);
 		model.setEditable(true);
@@ -314,7 +375,7 @@ public class WTableOptionsExample extends WBeanContainer {
 		table.setBeanProperty(".");
 
 		// Setup model with column properties and the "level" to iterate on (ie more details)
-		SimpleBeanBoundTableModel model = new SimpleBeanBoundTableModel(
+		MyBeanBoundTableModel model = new MyBeanBoundTableModel(
 				new String[]{"firstName", "lastName",
 					"dateOfBirth"}, "more");
 
@@ -335,17 +396,17 @@ public class WTableOptionsExample extends WBeanContainer {
 	private void addColumns(final WTable table) {
 		// Column - First name
 		WTextField textField = new WTextField();
-		textField.setAccessibleText("First name");
+		textField.setToolTip("First name");
 		table.addColumn(new WTableColumn("First name", textField));
 
 		// Column - Last name
 		textField = new WTextField();
-		textField.setAccessibleText("Last name");
+		textField.setToolTip("Last name");
 		table.addColumn(new WTableColumn("Last name", textField));
 
 		// Column - Date field
 		WDateField dateField = new WDateField();
-		dateField.setAccessibleText("Date of birth");
+		dateField.setToolTip("Date of birth");
 		table.addColumn(new WTableColumn("Date of birth", dateField));
 	}
 
@@ -364,6 +425,7 @@ public class WTableOptionsExample extends WBeanContainer {
 			rbsSeparator.setSelected(WTable.SeparatorType.NONE);
 			rbsSorting.setSelected(WTable.SortMode.NONE);
 			showColHeaders.setSelected(true);
+			paginationControlsLocation.setSelected(WTable.PaginationLocation.AUTO);
 			applySettings();
 
 			// Set the data used by the tables
@@ -425,6 +487,7 @@ public class WTableOptionsExample extends WBeanContainer {
 	 */
 	private void applyTableSettings(final WTable table) {
 		table.setSelectMode(rbsSelect.getSelected());
+
 		table.setSelectAllMode(rbsSelectAll.getSelected());
 		table.setExpandMode(rbsExpand.getSelected());
 		table.setSortMode(rbsSorting.getSelected());
@@ -433,16 +496,28 @@ public class WTableOptionsExample extends WBeanContainer {
 		table.setShowColumnHeaders(showColHeaders.isSelected());
 		table.setExpandAll(expandAll.isSelected());
 		table.setEditable(chbEditable.isSelected());
+		table.setToggleSubRowSelection(table.getType() == WTable.Type.HIERARCHIC
+				&& cbToggleSubRowSelection.isSelected()
+				&& rbsExpand.getSelected() != WTable.ExpandMode.NONE
+				&& rbsSelect.getSelected() == WTable.SelectMode.MULTIPLE);
+		// row headers
+		table.setRowHeaders(cbHasRowHeaders.isSelected());
+		// Caption
+		if (null == tfCaption.getText() || "".equals(tfCaption.getText())) {
+			table.setCaption(null);
+		} else {
+			table.setCaption(tfCaption.getText());
+		}
 
 		// Pagination
 		table.setPaginationMode(rbsPaging.getSelected());
 		if (rbsPaging.getSelected() == PaginationMode.NONE) {
 			table.setRowsPerPage(DEFAULT_ROWS_PER_PAGE);
 			table.setRowsPerPageOptions(null);
+			table.setPaginationLocation(WTable.PaginationLocation.AUTO);
 		} else {
 			// Options
-			table.setRowsPerPageOptions(
-					chbRowsPerPageOptions.isSelected() ? DEFAULT_ROWS_OPTIONS : null);
+			table.setRowsPerPageOptions(chbRowsPerPageOptions.isSelected() ? DEFAULT_ROWS_OPTIONS : null);
 			// Rows
 			int rows;
 			if (numRowsPerPage.isEmpty() || numRowsPerPage.getNumber().intValue() < 1) {
@@ -455,7 +530,10 @@ public class WTableOptionsExample extends WBeanContainer {
 				}
 			}
 			table.setRowsPerPage(rows);
+			table.setPaginationLocation(paginationControlsLocation.getSelected());
 		}
+		// enable responsive design for phones.
+		table.setHtmlClass(cbEnableRespond.isSelected() ? "wc-respond" : "");
 
 		List<COLUMN> cols = (List<COLUMN>) columnOrder.getSelected();
 		int[] order = new int[cols.size()];
@@ -469,7 +547,7 @@ public class WTableOptionsExample extends WBeanContainer {
 	/**
 	 * An example component to display travel document details. Expects that the supplied bean is a {@link TravelDoc}.
 	 */
-	public static final class TravelDocPanel extends WBeanContainer {
+	public static final class TravelDocPanel extends WContainer {
 
 		/**
 		 * Creates a TravelDocPanel.
@@ -592,6 +670,62 @@ public class WTableOptionsExample extends WBeanContainer {
 			return desc;
 		}
 
+	}
+
+	/**
+	 * A simple extension of SimpleBeanBoundTableModel to allow for individual rows to be selectable.
+	 */
+	private class MyBeanBoundTableModel extends SimpleBeanBoundTableModel {
+
+		/**
+		 * Create a Bean bound table model.
+		 * @param columnBeanProperties the column properties in this model.
+		 */
+		public MyBeanBoundTableModel(final String[] columnBeanProperties) {
+			super(columnBeanProperties);
+		}
+
+		/**
+		 * Define the column bean properties for the top level along with the expandable levels.
+		 *
+		 * @param columnBeanProperties the top level column bean properties
+		 * @param levels the expandable levels
+		 */
+		public MyBeanBoundTableModel(final String[] columnBeanProperties, final LevelDetails... levels) {
+			super(columnBeanProperties, levels);
+		}
+
+		/**
+		 * Define the column bean properties for the top level along with the bean property of the first expandable
+		 * level.
+		 *
+		 * @param columnBeanProperties the column bean properties
+		 * @param levelBeanProperty the bean property for the expandable level
+		 */
+		public MyBeanBoundTableModel(final String[] columnBeanProperties, final String levelBeanProperty) {
+			super(columnBeanProperties, new LevelDetails(levelBeanProperty, columnBeanProperties));
+		}
+
+
+		/**
+		 * Is a given row selectable?
+		 * @param row The row to test.
+		 * @return true if the row is selectable.
+		 */
+		@Override
+		public boolean isSelectable(final List<Integer> row) {
+			if (null == row || row.isEmpty()) {
+				return super.isSelectable(row); // let it be handled by super, we don't need to worry about this.
+			}
+			if (!super.isSelectable(row)) { // in the super implementation we determine if the table as a whole is selectable.
+				return false;
+			}
+			Object bean = getRowBean(row);
+			if (null == bean) {
+				return false;
+			}
+			return ((PersonBean) bean).isSelectable();
+		}
 	}
 
 }

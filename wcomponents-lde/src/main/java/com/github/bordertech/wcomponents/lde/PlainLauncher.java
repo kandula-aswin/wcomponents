@@ -8,13 +8,13 @@ import com.github.bordertech.wcomponents.container.PageShellInterceptor;
 import com.github.bordertech.wcomponents.monitor.ProfileContainer;
 import com.github.bordertech.wcomponents.registry.UIRegistry;
 import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.Util;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -42,12 +42,12 @@ public class PlainLauncher extends TestServlet {
 	/**
 	 * The {@link Config configuration} property key for which component to launch.
 	 */
-	public static final String COMPONENT_TO_LAUNCH_PARAM_KEY = "bordertech.wcomponents.lde.component.to.launch";
+	public static final String COMPONENT_TO_LAUNCH_PARAM_KEY = ConfigurationProperties.LDE_PLAINLAUNCHER_COMPONENT_TO_LAUNCH;
 
 	/**
 	 * The {@link Config configuration} property key for whether to display the memory profile.
 	 */
-	protected static final String SHOW_MEMORY_PROFILE_PARAM_KEY = "bordertech.wcomponents.lde.show.memory.profile";
+	protected static final String SHOW_MEMORY_PROFILE_PARAM_KEY = ConfigurationProperties.LDE_SHOW_MEMORY_PROFILE;
 
 	/**
 	 * The singleton instance of the UI which is being run by the PlainLauncher.
@@ -72,8 +72,7 @@ public class PlainLauncher extends TestServlet {
 	 */
 	@Override
 	public synchronized WComponent getUI(final Object httpServletRequest) {
-		String configuredUIClassName = Config.getInstance()
-				.getString(COMPONENT_TO_LAUNCH_PARAM_KEY);
+		String configuredUIClassName = getComponentToLaunchClassName();
 
 		if (sharedUI == null || !Util.equals(configuredUIClassName, uiClassName)) {
 			uiClassName = configuredUIClassName;
@@ -92,7 +91,7 @@ public class PlainLauncher extends TestServlet {
 				sharedUI.setLocked(true);
 			}
 
-			if (Config.getInstance().getBoolean(SHOW_MEMORY_PROFILE_PARAM_KEY, false)) {
+			if (ConfigurationProperties.getLdeServerShowMemoryProfile()) {
 				ProfileContainer profiler = new ProfileContainer();
 
 				sharedUI.setLocked(false);
@@ -154,8 +153,7 @@ public class PlainLauncher extends TestServlet {
 
 		WComponent sharedApp = null;
 
-		Configuration config = Config.getInstance();
-		uiClassName = config.getString(COMPONENT_TO_LAUNCH_PARAM_KEY);
+		uiClassName = getComponentToLaunchClassName();
 
 		if (uiClassName == null) {
 			sharedApp = new WText(
@@ -187,6 +185,13 @@ public class PlainLauncher extends TestServlet {
 		}
 
 		return sharedApp;
+	}
+
+	/**
+	 * @return the class name of the component to launch.
+	 */
+	protected String getComponentToLaunchClassName() {
+		return ConfigurationProperties.getLdePlainLauncherComponentToLaunch();
 	}
 
 	/**

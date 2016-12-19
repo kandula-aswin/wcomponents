@@ -2,15 +2,19 @@ package com.github.bordertech.wcomponents.examples;
 
 import com.github.bordertech.wcomponents.Action;
 import com.github.bordertech.wcomponents.ActionEvent;
+import com.github.bordertech.wcomponents.HeadingLevel;
 import com.github.bordertech.wcomponents.MessageContainer;
 import com.github.bordertech.wcomponents.Request;
+import com.github.bordertech.wcomponents.WAjaxControl;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WCancelButton;
+import com.github.bordertech.wcomponents.WContainer;
 import com.github.bordertech.wcomponents.WDefinitionList;
 import com.github.bordertech.wcomponents.WDialog;
 import com.github.bordertech.wcomponents.WFieldLayout;
 import com.github.bordertech.wcomponents.WFieldSet;
 import com.github.bordertech.wcomponents.WHeading;
+import com.github.bordertech.wcomponents.WLabel;
 import com.github.bordertech.wcomponents.WMessages;
 import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.WPartialDateField;
@@ -18,6 +22,7 @@ import com.github.bordertech.wcomponents.WRadioButtonSelect;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.WTextField;
 import com.github.bordertech.wcomponents.WebUtilities;
+import com.github.bordertech.wcomponents.examples.common.ExplanatoryText;
 import com.github.bordertech.wcomponents.layout.BorderLayout;
 import com.github.bordertech.wcomponents.layout.FlowLayout;
 import com.github.bordertech.wcomponents.layout.FlowLayout.Alignment;
@@ -75,6 +80,10 @@ public class WDialogExample extends WPanel implements MessageContainer {
 		setLayout(new FlowLayout(Alignment.VERTICAL));
 		add(messages);
 
+		final WPanel outputPanel = new WPanel(WPanel.Type.BOX);
+		final WText txtNow = new WText("Now : " + (new Date()).toString());
+		outputPanel.add(txtNow);
+
 		/* Immediate opening: This is the preferred way to open a WDialog as it
 		 * is the most efficient. To make a WDialog which opens without making
 		 * a round trip to the server the WButton which opens the dialog is
@@ -94,6 +103,7 @@ public class WDialogExample extends WPanel implements MessageContainer {
 		defList.addTerm("Dialog opened by", new WText(dialogOpeningButton.getText()));
 		nonModalDialog = new WDialog(defList, dialogOpeningButton);
 		nonModalDialog.setTitle("View list with time");
+		nonModalDialog.setWidth(600);
 
 		dialogOpeningButton.setAction(new Action() {
 			@Override
@@ -117,7 +127,16 @@ public class WDialogExample extends WPanel implements MessageContainer {
 		// Content for the modal dialog
 		final SelectPersonPanel selectPanel2 = new SelectPersonPanel();
 		// Modal Dialog
-		modalDialog = new WDialog(selectPanel2, new WButton("Show modal search Dialog (immediate)"));
+		WButton modalSearchImmediate = new WButton("Show modal search Dialog (immediate)");
+
+		modalDialog = new WDialog(selectPanel2, modalSearchImmediate);
+		modalSearchImmediate.setAction(new Action() {
+			@Override
+			public void execute(final ActionEvent event) {
+				selectPanel2.reset();
+				// modalDialog.display();
+			}
+		});
 		modalDialog.setTitle("Search");
 		modalDialog.setMode(WDialog.MODAL);
 
@@ -189,13 +208,12 @@ public class WDialogExample extends WPanel implements MessageContainer {
 		 * Each of these opens immediately (that is, without having to reload
 		 * the underlying page).
 		 */
-		/*
+ /*
 		 * DIALOG with a TITLE
 		 * If not set explicitly, the title of a dialog is determined by the UI theme.
 		 * ALL dialogs must have a title, you probably DO NOT WANT the theme default!
 		 */
-		final WDialog dialogWithTitle = new WDialog(new ViewPersonList(), new WButton(
-				"Show dialog with specified title"));
+		final WDialog dialogWithTitle = new WDialog(new ViewPersonList(), new WButton("Show dialog with specified title"));
 		dialogWithTitle.setTitle("List of people");
 		/*
 		 * NOT RESIZEABLE
@@ -203,39 +221,55 @@ public class WDialogExample extends WPanel implements MessageContainer {
 		 * disabled: you usually don't want to do this as it may cause usability
 		 * problems.
 		 */
-		final WDialog fixedSizeDialog = new WDialog(new ViewPersonList(), new WButton(
-				"Show dialog which is not resizeable"));
+		final WDialog fixedSizeDialog = new WDialog(new ViewPersonList(), new WButton("Show dialog which is not resizeable"));
 		fixedSizeDialog.setResizable(false);
+		/*
+		 * NOT RESIZEABLE with fixed dimensions
+		 * A WDialog is resizeable by the user unless resizing is explicitly
+		 * disabled: you usually don't want to do this as it may cause usability
+		 * problems.
+		 */
+		final WDialog fixedSizeDialog2 = new WDialog(new ViewPersonList(), new WButton("Show dialog with size but not resizeable"));
+		fixedSizeDialog2.setResizable(false);
+		fixedSizeDialog2.setWidth(300);
+		fixedSizeDialog2.setHeight(150);
+
 		/*
 		 * SET THE WIDTH of a dialog
 		 * If not set explicitly, the initial width of a dialog is determined by the UI theme.
 		 */
-		final WDialog dialogWithWidth = new WDialog(new ViewPersonList(), new WButton(
-				"Show dialog with specified width (300px)"));
+		final WDialog dialogWithWidth = new WDialog(new ViewPersonList(), new WButton("Show dialog with specified width (300px)"));
 		dialogWithWidth.setWidth(300);
 		/*
 		 * SET THE HEIGHT of a dialog
 		 * If not set explicitly, the initial width of a dialog is determined by the UI theme.
 		 */
-		final WDialog dialogWithHeight = new WDialog(new ViewPersonList(), new WButton(
-				"Show dialog with specified height (150px)"));
+		final WDialog dialogWithHeight = new WDialog(new ViewPersonList(), new WButton("Show dialog with specified height (150px)"));
 		dialogWithHeight.setHeight(150);
+		/*
+		 * SET THE HEIGHT of a dialog
+		 * If not set explicitly, the initial width of a dialog is determined by the UI theme.
+		 */
+		final WDialog dialogWithHeight2 = new WDialog(new WText("1500px x 1000px"), new WButton("Show enormous dialog"));
+		dialogWithHeight2.setHeight(1000);
+		dialogWithHeight2.setWidth(1500);
 		/*
 		 * Make Modal
 		 * If not set explicitly, the initial width of a dialog is determined by the UI theme.
 		 */
-		final WDialog dialogWithMode = new WDialog(new ViewPersonList(), new WButton(
-				"Show dialog with mode set to MODAL"));
+		final WDialog dialogWithMode = new WDialog(new ViewPersonList(), new WButton("Show modal dialog"));
 		dialogWithMode.setMode(WDialog.MODAL);
 
 		// Layout
-		add(new WHeading(WHeading.MAJOR,
+		add(new WHeading(HeadingLevel.H2,
 				"Dialogs which display use of various properties one at a time"));
 		add(dialogWithTitle);
 		add(fixedSizeDialog);
 		add(dialogWithWidth);
 		add(dialogWithHeight);
+		add(dialogWithHeight2);
 		add(dialogWithMode);
+		add(fixedSizeDialog2);
 
 		add(new WHeading(WHeading.MAJOR, "Dialogs which open without page reload"));
 		//remember the button of an immediate is part of the dialog: it will be place into the UI wherever the dialog is placed
@@ -254,18 +288,43 @@ public class WDialogExample extends WPanel implements MessageContainer {
 		add(modalDialogRT);
 		add(nonModalDialogRT);
 
-		WDialog fileUploadDialog = new WDialog(new WMultiFileWidgetAjaxExample(), new WButton(
-				"Upload"));
+		WDialog fileUploadDialog = new WDialog(new WMultiFileWidgetAjaxExample(), new WButton("Upload"));
 		fileUploadDialog.setMode(WDialog.MODAL);
 		fileUploadDialog.setWidth(600);
 		add(fileUploadDialog);
 
+		final WPartialDateField pdfDate = new WPartialDateField();
+		WButton dateButton = new WButton("Set Date");
+		dateButton.setAction(new Action() {
+			@Override
+			public void execute(final ActionEvent event) {
+				txtNow.setText("Date Selected : " + pdfDate.getValueAsString());
+			}
+		});
+
 		WFieldLayout dateDlgFldLayout = new WFieldLayout();
-		dateDlgFldLayout.addField("Set a date", new WPartialDateField());
+		dateDlgFldLayout.addField("Set a date", pdfDate);
+		WContainer dateBtnContainer = new WContainer();
+		dateBtnContainer.add(dateButton);
+		dateBtnContainer.add(new WAjaxControl(dateButton, outputPanel));
+		dateDlgFldLayout.addField((WLabel) null, dateBtnContainer);
 		WDialog dateDlg = new WDialog(dateDlgFldLayout, new WButton("Select a date in a dialog"));
+
 		dateDlg.setWidth(450);
 		dateDlg.setMode(WDialog.MODAL);
+
 		add(dateDlg);
+		add(outputPanel);
+
+
+		add(new WHeading(HeadingLevel.H3, "Multi polling ajax inside a dialog"));
+		add(new ExplanatoryText("You really don't want to do this."));
+		WDialog pollingDialog = new WDialog(new MultiPollingExample());
+		pollingDialog.setMode(WDialog.MODAL);
+		WButton openPollingButton = new WButton("Open dialog with multi polling");
+		pollingDialog.setTrigger(openPollingButton);
+		add(openPollingButton);
+		add(pollingDialog);
 	}
 
 	/**

@@ -1,7 +1,7 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
 	<!--
-		ui:ajaxResponse is the root element of a response to an ajax request. In
+		ui:ajaxresponse is the root element of a response to an ajax request. In
 		most cases this is processed in JavaScript.
 		
 		When the ajaxResponse is sent as part of the pseudo-AJAX of WFileWidget then 
@@ -35,40 +35,35 @@
 	
 		This template undertakes one of two jobs:
 
-		1. When no single ui:ajaxTarget child has a child of ui:file we
+		1. When no single ui:ajaxtarget child has a child of ui:file we
 		create an output tree in which all children are output in a wrapper
 		element for parsing by the JavaScript XSL transformer; or
 
-		2. If an ui:ajaxTarget child has a ui:file child then the
+		2. If an ui:ajaxtarget child has a ui:file child then the
 		entire ajaxResponse is a pseudo-AJAX response from multiFileUpload and
 		the transform creates a HTML document used for pseudo-AJAX file upload.
 	-->
-	<xsl:template match="ui:ajaxResponse">
+	<xsl:template match="ui:ajaxresponse">
 		<xsl:choose>
-			<xsl:when test="ui:ajaxTarget/*[not(self::ui:file)]">
-				<xsl:element name="div">
-					<xsl:attribute name="class">wc-ajaxresponse</xsl:attribute>
+			<xsl:when test="ui:ajaxtarget/node()[not(self::ui:file)]">
+				<div class="wc-ajaxresponse">
 					<xsl:if test="@defaultFocusId">
 						<xsl:attribute name="data-focusid"><xsl:value-of select="@defaultFocusId"/></xsl:attribute>
 					</xsl:if>
 					<xsl:apply-templates />
-					<xsl:apply-templates select=".//ui:dialog[ui:content][1]" mode="withcontent"/>
-				</xsl:element>
+				</div>
 			</xsl:when>
 			<xsl:otherwise>
-				<xsl:element name="html">
-					<xsl:attribute name="lang">
-						<xsl:value-of select="$lang"/>
-					</xsl:attribute>
-					<xsl:element name="head">
-						<xsl:element name="title">
+				<html lang="en"><!-- The lang is hardcodeed but the pseudo ajax stuff is pretty much dead -->
+					<head>
+						<title>
 							<xsl:text>Pseudo AJAX iframe</xsl:text>
-						</xsl:element>
-					</xsl:element>
-					<xsl:element name="body">
+						</title>
+					</head>
+					<body>
 						<xsl:apply-templates mode="pseudoAjax"/>
-					</xsl:element>
-				</xsl:element>
+					</body>
+				</html>
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>

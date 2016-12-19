@@ -1,19 +1,18 @@
-define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
+define(["intern!object", "intern/chai!assert", "./resources/test.utils!"],
 	function (registerSuite, assert, testutils) {
 		"use strict";
 
 		var getAncestorOrSelf,
 			testHolder,
-			urlResource = "../../target/test-classes/wcomponents-theme/intern/resources/domTest.html";
+			urlResource = "@RESOURCES@/domTest.html";
 
 		registerSuite({
 			name: "domGetAncestorOrSelf",
 			setup: function() {
-				var result = new testutils.LamePromisePolyFill();
-				testutils.setupHelper(["wc/dom/getAncestorOrSelf"], function(obj) {
-					getAncestorOrSelf = obj;
+				var result = testutils.setupHelper(["wc/dom/getAncestorOrSelf"]).then(function(arr) {
+					getAncestorOrSelf = arr[0];
 					testHolder = testutils.getTestHolder();
-					testutils.setUpExternalHTML(urlResource, testHolder).then(result._resolve);
+					return testutils.setUpExternalHTML(urlResource, testHolder);
 				});
 				return result;
 			},
@@ -242,7 +241,7 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 			},
 			testTopLevel: function() {
 				var foo = document.getElementById("foo"),
-					dto = {element: foo, tagName: "div", limitTagName: "${wc.dom.html5.element.section}", outermost: true},
+					dto = {element: foo, tagName: "div", limitTagName: "section", outermost: true},
 					result = getAncestorOrSelf(dto);
 				assert.strictEqual("moocowDiv", result.id);
 			},

@@ -2,21 +2,26 @@ package com.github.bordertech.wcomponents.examples;
 
 import com.github.bordertech.wcomponents.Action;
 import com.github.bordertech.wcomponents.ActionEvent;
+import com.github.bordertech.wcomponents.HeadingLevel;
 import com.github.bordertech.wcomponents.MessageContainer;
 import com.github.bordertech.wcomponents.Request;
+import com.github.bordertech.wcomponents.WApplication;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WButton.ImagePosition;
 import com.github.bordertech.wcomponents.WContainer;
 import com.github.bordertech.wcomponents.WFieldLayout;
 import com.github.bordertech.wcomponents.WHeading;
 import com.github.bordertech.wcomponents.WHorizontalRule;
+import com.github.bordertech.wcomponents.WImage;
 import com.github.bordertech.wcomponents.WMessageBox;
 import com.github.bordertech.wcomponents.WMessages;
 import com.github.bordertech.wcomponents.WPanel;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.WTextField;
+import com.github.bordertech.wcomponents.WebUtilities;
 import com.github.bordertech.wcomponents.examples.common.ExplanatoryText;
 import com.github.bordertech.wcomponents.layout.FlowLayout;
+import com.github.bordertech.wcomponents.util.HtmlClassProperties;
 
 /**
  * <p>
@@ -56,20 +61,21 @@ public class WButtonExample extends WPanel implements MessageContainer {
 		add(messages);
 
 		// Plain button
-		add(new WHeading(WHeading.MAJOR, "Plain button"));
+		add(new WHeading(HeadingLevel.H2, "Plain button"));
 		add(plainBtn);
 
 		// Button rendered as a link
-		add(new WHeading(WHeading.MAJOR, "Link button"));
+		add(new WHeading(HeadingLevel.H2, "Link button"));
 		add(new ExplanatoryText(
-				"It is a mere design artifact to make a button look like a link but it is strongly recommended that you do not do this as it can cause issues for users."));
+				"It is a mere design artifact to make a button look like a link but it is strongly recommended "
+						+ "that you do not do this as it can cause issues for users."));
 
 		linkBtn.setRenderAsLink(true);
 		add(linkBtn);
 
 		// Buttons to demonstrate use of Actions and dynamically changed button text.
 		final WButton disableBtn = new WButton("Disable buttons");
-		add(new WHeading(WHeading.MAJOR, "Button with actions"));
+		add(new WHeading(HeadingLevel.H2, "Button with actions"));
 		add(new WText("This button disables/enables the plain and link buttons above."));
 		add(disableBtn);
 
@@ -88,6 +94,8 @@ public class WButtonExample extends WPanel implements MessageContainer {
 		//disabled state
 		addDisabledExamples();
 
+		addClientOnlyExamples();
+
 		add(new WHorizontalRule());
 		addImageExamples();
 
@@ -104,31 +112,37 @@ public class WButtonExample extends WPanel implements MessageContainer {
 	 */
 	private void addImageExamples() {
 		// Button rendered with an image only
-		add(new WHeading(WHeading.MAJOR, "Image buttons"));
+		add(new WHeading(HeadingLevel.H2, "Image buttons"));
 		add(new ExplanatoryText("This example shows how to use an image inside a WButton."));
 
-		add(new WHeading(WHeading.SECTION, "Just an image"));
+		add(new WHeading(HeadingLevel.H3, "Just an image"));
 		add(new ExplanatoryText(
 				"This example shows how to use an image as the only content of a WButton. "
 				+ "The button must still have text content to adequately explain the button's purpose."));
 
-		add(new WHeading(WHeading.MINOR, "Image in a button"));
+		add(new WHeading(HeadingLevel.H4, "Image in a button"));
 		add(makeImageButton("Save", false));
 
-		add(new WHeading(WHeading.MINOR, "Image button without button style"));
+		add(new WHeading(HeadingLevel.H4, "Image button without button style"));
 		add(new ExplanatoryText(
 				"This example shows how to use an image as the only content of a WButton when styled to be without its button appearance. "
 				+ "If you are creating a button containing only an image you should be careful as it may not be obvious to the application user that the 'image' is actually a 'button'."
 				+ "The button must still have text content to adequately explain the button's purpose."));
 		add(makeImageButton("Save", true));
 
-		add(new WHeading(WHeading.SECTION, "Image and text"));
+		add(new ExplanatoryText("Button using a WImage description as the text equivalent."));
+		WButton button = new WButton();
+		WImage buttonImage = new WImage("/image/tick.png", "Mark as OK");
+		button.setImage(buttonImage.getImage());
+		add(button);
+
+		add(new WHeading(HeadingLevel.H3, "Image and text"));
 		add(new ExplanatoryText(
 				"This example shows how to use an image and text as the content of a button."));
 
-		add(new WHeading(WHeading.MINOR, "Rendered as a button"));
+		add(new WHeading(HeadingLevel.H4, "Rendered as a button"));
 
-		WPanel buttonLayoutPanel = new WPanel(WPanel.Type.FEATURE);
+		WPanel buttonLayoutPanel = new WPanel(WPanel.Type.BOX);
 		buttonLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0,
 				FlowLayout.ContentAlignment.BOTTOM));
 		add(buttonLayoutPanel);
@@ -139,10 +153,10 @@ public class WButtonExample extends WPanel implements MessageContainer {
 				add(makeImageButtonWithPosition("Image on the South", ImagePosition.SOUTH));
 		buttonLayoutPanel.add(makeImageButtonWithPosition("Image on the West", ImagePosition.WEST));
 
-		add(new WHeading(WHeading.MINOR, "Rendered as a link"));
+		add(new WHeading(HeadingLevel.H4, "Rendered as a link"));
 		add(new ExplanatoryText(
 				"This example shows how to use an image and text as the content of a button without the button styling."));
-		buttonLayoutPanel = new WPanel(WPanel.Type.FEATURE);
+		buttonLayoutPanel = new WPanel(WPanel.Type.BOX);
 		buttonLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0,
 				FlowLayout.ContentAlignment.BOTTOM));
 		add(buttonLayoutPanel);
@@ -154,6 +168,63 @@ public class WButtonExample extends WPanel implements MessageContainer {
 				true));
 		buttonLayoutPanel.add(makeImageButtonWithPosition("Image on the West", ImagePosition.WEST,
 				true));
+
+		add(new WHeading(HeadingLevel.H4, "Using theme icons"));
+
+		add(new ExplanatoryText("These examples show ways to add an icon to a button using 'HtmlClassUtil'."));
+
+		WButton iconButton = new WButton("\u200b"); // \u200b is a zero-width space.
+		iconButton.setToolTip("Edit");
+		iconButton.setHtmlClass(HtmlClassProperties.ICON_EDIT);
+		add(iconButton);
+
+		iconButton = new WButton("Save");
+		iconButton.setHtmlClass(HtmlClassProperties.ICON_SAVE_BEFORE);
+		add(iconButton);
+
+		iconButton = new WButton("Search");
+		iconButton.setHtmlClass(HtmlClassProperties.ICON_SEARCH_AFTER);
+		add(iconButton);
+
+		add(new ExplanatoryText("These examples show ways to add a Font-Awesome icon to a button using 'setHtmlClass(String)'."));
+		iconButton = new WButton("\u200b"); // \u200b is a zero-width space.
+		iconButton.setToolTip("Open Menu");
+		iconButton.setHtmlClass("wc-icon fa-bars");
+		add(iconButton);
+
+		iconButton = new WButton("With text content");
+		iconButton.setHtmlClass("wc-icon-before fa-hand-o-left");
+		add(iconButton);
+
+		iconButton = new WButton("Right icon with text content");
+		iconButton.setHtmlClass("wc-icon-after fa-hand-o-right");
+		add(iconButton);
+	}
+
+	/**
+	 * Examples showing use of client only buttons.
+	 */
+	private void addClientOnlyExamples() {
+		// client command button
+
+		add(new WHeading(HeadingLevel.H2, "Client command buttons"));
+		add(new ExplanatoryText("These examples show buttons which do not submit the form"));
+
+		//client command buttons witho a command
+		WButton nothingButton = new WButton("Do nothing");
+		add(nothingButton);
+		nothingButton.setClientCommandOnly(true);
+		nothingButton = new WButton("Do nothing link");
+		add(nothingButton);
+		nothingButton.setRenderAsLink(true);
+		nothingButton.setClientCommandOnly(true);
+
+		// client command buttons with command.
+		HelloButton helloButton = new HelloButton("Hello");
+		add(helloButton);
+		helloButton = new HelloButton("Hello link");
+		helloButton.setRenderAsLink(true);
+		add(helloButton);
 	}
 
 	/**
@@ -206,7 +277,7 @@ public class WButtonExample extends WPanel implements MessageContainer {
 	 * Examples showing how to set a WButton as the default submit button for an input control.
 	 */
 	private void addDefaultSubmitButtonExample() {
-		add(new WHeading(WHeading.SECTION, "Default submit button"));
+		add(new WHeading(HeadingLevel.H3, "Default submit button"));
 
 		add(new ExplanatoryText(
 				"This example shows how to use an image as the only content of a WButton. "
@@ -242,9 +313,9 @@ public class WButtonExample extends WPanel implements MessageContainer {
 	 * Examples of disabled buttons in various guises.
 	 */
 	private void addDisabledExamples() {
-		add(new WHeading(WHeading.MAJOR, "Examples of disabled buttons"));
+		add(new WHeading(HeadingLevel.H2, "Examples of disabled buttons"));
 
-		WPanel disabledButtonLayoutPanel = new WPanel(WPanel.Type.FEATURE);
+		WPanel disabledButtonLayoutPanel = new WPanel(WPanel.Type.BOX);
 		disabledButtonLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0,
 				FlowLayout.ContentAlignment.BASELINE));
 		add(disabledButtonLayoutPanel);
@@ -257,8 +328,8 @@ public class WButtonExample extends WPanel implements MessageContainer {
 		button.setRenderAsLink(true);
 		disabledButtonLayoutPanel.add(button);
 
-		add(new WHeading(WHeading.SECTION, "Examples of disabled buttons displaying only an image"));
-		disabledButtonLayoutPanel = new WPanel(WPanel.Type.FEATURE);
+		add(new WHeading(HeadingLevel.H3, "Examples of disabled buttons displaying only an image"));
+		disabledButtonLayoutPanel = new WPanel(WPanel.Type.BOX);
 		disabledButtonLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0,
 				FlowLayout.ContentAlignment.BASELINE));
 		add(disabledButtonLayoutPanel);
@@ -275,10 +346,10 @@ public class WButtonExample extends WPanel implements MessageContainer {
 		button.setToolTip("Checking currently disabled");
 		disabledButtonLayoutPanel.add(button);
 
-		add(new WHeading(WHeading.SECTION,
+		add(new WHeading(HeadingLevel.H3,
 				"Examples of disabled buttons displaying an image with imagePosition EAST"));
 
-		disabledButtonLayoutPanel = new WPanel(WPanel.Type.FEATURE);
+		disabledButtonLayoutPanel = new WPanel(WPanel.Type.BOX);
 		disabledButtonLayoutPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 6, 0,
 				FlowLayout.ContentAlignment.BASELINE));
 		add(disabledButtonLayoutPanel);
@@ -301,16 +372,16 @@ public class WButtonExample extends WPanel implements MessageContainer {
 	 * Examples of what not to do when using WButton.
 	 */
 	private void addAntiPatternExamples() {
-		add(new WHeading(WHeading.MAJOR, "WButton anti-pattern examples"));
+		add(new WHeading(HeadingLevel.H2, "WButton anti-pattern examples"));
 		add(new WMessageBox(WMessageBox.WARN,
 				"These examples are purposely bad and should not be used as samples of how to use WComponents but samples of how NOT to use them."));
 
-		add(new WHeading(WHeading.SECTION, "WButton without a good label"));
+		add(new WHeading(HeadingLevel.H3, "WButton without a good label"));
 		add(new WButton("\u2002"));
 		add(new ExplanatoryText("A button without a text label is very bad"));
 
-		add(new WHeading(WHeading.SECTION, "WButton with a WImage but without a good label"));
-		WButton button = new WButton("\u00a0");
+		add(new WHeading(HeadingLevel.H3, "WButton with a WImage but without a good label"));
+		WButton button = new WButton("");
 		button.setImage("/image/help.png");
 		add(button);
 		add(new ExplanatoryText(
@@ -364,6 +435,37 @@ public class WButtonExample extends WPanel implements MessageContainer {
 
 			messages.info(((WButton) event.getActionObject()).getText() + MESSAGE);
 		}
+
+	}
+
+	/**
+	 * Simple extension of WButton to set as a client only button and add a class used in the example's alert script. We then add the script in the
+	 * first use.
+	 *
+	 */
+	private final class HelloButton extends WButton {
+		/**
+		 * Create a HelloButton with a particlar text label.
+		 * @param text the text to show on the button
+		 */
+		public HelloButton(final String text) {
+			super(text);
+			setClientCommandOnly(true);
+			setHtmlClass("hellobutton");
+		}
+
+		/**
+		 * @inheritDoc
+		 */
+		@Override
+		protected void preparePaintComponent(final Request request) {
+			if (!isInitialised()) {
+				WebUtilities.getAncestorOfClass(WApplication.class, this).addJsFile("/com/github/bordertech/wcomponents/examples/hellobutton.js");
+				setInitialised(true);
+			}
+			super.preparePaintComponent(request);
+		}
+
 
 	}
 }

@@ -1,11 +1,11 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
 	<!--
 		Tranforms the options of a list into HTML option elements.
 	-->
 	<xsl:template match="ui:option" mode="selectableList">
 		<xsl:variable name="value" select="@value"/>
-		<xsl:element name="option">
+		<option>
 			<xsl:attribute name="value">
 				<xsl:choose>
 					<xsl:when test="$value">
@@ -20,11 +20,11 @@
 				<xsl:attribute name="selected">selected</xsl:attribute>
 			</xsl:if>
 			<xsl:if test="@isNull">
-				<xsl:attribute name="${wc.common.attribute.optionIsNull}">
+				<xsl:attribute name="data-wc-null">
 					<xsl:text>1</xsl:text>
 				</xsl:attribute>
 			</xsl:if>
 			<xsl:value-of select="."/>
-		</xsl:element>
+		</option>
 	</xsl:template>
 </xsl:stylesheet>

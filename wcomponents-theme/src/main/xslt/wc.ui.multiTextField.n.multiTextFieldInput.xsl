@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.common.ajax.xsl"/>
 	<xsl:import href="wc.common.disabledElement.xsl"/>
 
@@ -13,36 +13,21 @@
 
 		param readOnly: The read only state of the parent multiTextField
 
-		param useField: A reference to the ui:multiTextField element which may
+		param useField: A reference to the ui:multitextfield element which may
 		be the calling element or its parent depending upon from where this
 		template is called.
 	-->
 	<xsl:template name="multiTextFieldInput">
-		<xsl:variable name="field" select="ancestor-or-self::ui:multiTextField"/>
+		<xsl:variable name="field" select="ancestor-or-self::ui:multitextfield"/>
 		<xsl:variable name="fieldId">
 			<xsl:value-of select="$field/@id"/>
-		</xsl:variable>
-		<xsl:variable name="name">
-			<xsl:value-of select="$fieldId"/>
-		</xsl:variable>
-		<xsl:variable name="size">
-			<xsl:value-of select="$field/@size"/>
-		</xsl:variable>
-		<xsl:variable name="maxlength">
-			<xsl:value-of select="$field/@maxLength"/>
-		</xsl:variable>
-		<xsl:variable name="minLength">
-			<xsl:value-of select="$field/@minLength"/>
-		</xsl:variable>
-		<xsl:variable name="pattern">
-			<xsl:value-of select="$field/@pattern"/>
 		</xsl:variable>
 		<xsl:element name="input">
 			<xsl:attribute name="type">
 				<xsl:text>text</xsl:text>
 			</xsl:attribute>
 			<xsl:attribute name="name">
-				<xsl:value-of select="$name"/>
+				<xsl:value-of select="$fieldId"/>
 			</xsl:attribute>
 			<xsl:attribute name="id">
 				<xsl:value-of select="concat($fieldId,generate-id())"/>
@@ -51,26 +36,36 @@
 				</xsl:if>
 			</xsl:attribute>
 			<xsl:attribute name="title">
-				<xsl:value-of select="$$${wc.ui.multiFormComponent.i18n.optionLabelText}"/>
+				<xsl:text>{{t 'mfc_option'}}</xsl:text>
 			</xsl:attribute>
-			<xsl:if test="$size != ''">
+			<xsl:if test="$field/@size">
 				<xsl:attribute name="size">
-					<xsl:value-of select="$size"/>
+					<xsl:value-of select="$field/@size"/>
 				</xsl:attribute>
 			</xsl:if>
-			<xsl:if test="$maxlength!=''">
+			<xsl:if test="$field/@maxLength">
 				<xsl:attribute name="maxlength">
-					<xsl:value-of select="$maxlength"/>
+					<xsl:value-of select="$field/@maxLength"/>
 				</xsl:attribute>
 			</xsl:if>
-			<xsl:if test="$pattern!=''">
+			<xsl:if test="$field/@pattern">
 				<xsl:attribute name="pattern">
-					<xsl:value-of select="$pattern"/>
+					<xsl:value-of select="$field/@pattern"/>
 				</xsl:attribute>
 			</xsl:if>
-			<xsl:if test="$minLength!=''">
-				<xsl:attribute name="${wc.ui.textField.attrib.minLength}">
-					<xsl:value-of select="$minLength"/>
+			<xsl:if test="$field/@minLength">
+				<xsl:attribute name="minlength">
+					<xsl:value-of select="$field/@minLength"/>
+				</xsl:attribute>
+			</xsl:if>
+			<xsl:if test="$field/@placeholder">
+				<xsl:attribute name="placeholder">
+					<xsl:value-of select="$field/@placeholder"/>
+				</xsl:attribute>
+			</xsl:if>
+			<xsl:if test="$field/@autocomplete">
+				<xsl:attribute name="autocomplete">
+					<xsl:value-of select="$field/@autocomplete"/>
 				</xsl:attribute>
 			</xsl:if>
 			<xsl:call-template name="disabledElement">

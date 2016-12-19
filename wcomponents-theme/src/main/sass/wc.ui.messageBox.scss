@@ -1,79 +1,23 @@
 /* wc.ui.messagesBox.scss */
-@import 'wc.ui.messageBox_vars.scss';
+@import 'mixins-common';
 
 .wc_msgbox {
 	@include border;
-	background-color: $wc-ui-color-global-bg;
+	@include flex;
 	min-height: 0;
-	padding: 0 0 $vgap-normal;
 
-	> h1 {
-		color: $std-color-white;
-		font-size: $msg-box-header-size;
-		font-weight: normal;
-		margin-top: 0;
-		padding: $vgap-normal $hgap-small;
+	> h1 > span {
+		@include offscreen;
+	}
 
-		&:before {
-			@include make-box($height: $msg-box-header-size, $width: $msg-box-header-size); // Width and height same as font-size for the heading
-			@include background-image($url: '../images/error.png', $height: contain);
-			content: ' ';
-			margin: 0 $hgap-small;
-			vertical-align: text-top;
+	> div {
+		@include flex-align-self(center);
+
+		> div + div {
+			margin-top: $wc-gap-normal;
 		}
-	}
-
-	> button {
-		padding: $vgap-normal $hgap-small;
-	}
-
-	// message types - there can only be one type per box
-	&.error {
-		border-color: $wc-ui-color-error-fg;
-
-		> h1 {
-			background-color: $wc-ui-color-error-fg;
-		}
-	}
-
-	&.warn {
-		border-color: $wc-ui-color-warning-fg;
-
-		> h1 {
-			background-color: $wc-ui-color-warning-fg;
-
-			&:before {
-				background-image: url('../images/warning.png');
-			}
-		}
-	}
-
-	&.info {
-		border-color: $wc-ui-color-info-fg;
-
-		> h1 {
-			background-color: $wc-ui-color-info-fg;
-
-			&:before {
-				background-image: url('../images/information.png');
-			}
-		}
-	}
-
-	&.success {
-		border-color: $wc-ui-color-success-fg;
-
-		> h1 {
-			background-color: $wc-ui-color-success-fg;
-
-			&:before {
-				background-image: url('../images/success.png');
-			}
-		}
-	}
-
-	li { //maintain white space on messages.
-		white-space: pre-wrap;
 	}
 }
-/* end wc.ui.messagesBox.scss */
+
+@import 'wc.ui.messageBox.color';
+@import 'wc.ui.messageBoxIcons';

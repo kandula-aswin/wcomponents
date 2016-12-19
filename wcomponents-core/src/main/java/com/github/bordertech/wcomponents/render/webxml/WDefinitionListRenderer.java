@@ -8,7 +8,7 @@ import com.github.bordertech.wcomponents.servlet.WebXmlRenderContext;
 import com.github.bordertech.wcomponents.util.Duplet;
 import com.github.bordertech.wcomponents.util.I18nUtilities;
 import com.github.bordertech.wcomponents.util.SystemException;
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * The {@link Renderer} for {@link WDefinitionList}.
@@ -29,7 +29,7 @@ final class WDefinitionListRenderer extends AbstractWebXmlRenderer {
 		WDefinitionList list = (WDefinitionList) component;
 		XmlStringBuilder xml = renderContext.getWriter();
 
-		xml.appendTagOpen("ui:definitionList");
+		xml.appendTagOpen("ui:definitionlist");
 		xml.appendAttribute("id", component.getId());
 		xml.appendOptionalAttribute("class", component.getHtmlClass());
 		xml.appendOptionalAttribute("track", component.isTracking(), "true");
@@ -59,7 +59,7 @@ final class WDefinitionListRenderer extends AbstractWebXmlRenderer {
 		// Render margin
 		MarginRendererUtil.renderMargin(list, renderContext);
 
-		for (Duplet<String, List<WComponent>> term : list.getTerms()) {
+		for (Duplet<String, ArrayList<WComponent>> term : list.getTerms()) {
 			xml.appendTagOpen("ui:term");
 			xml.appendAttribute("text", I18nUtilities.format(null, term.getFirst()));
 			xml.appendClose();
@@ -73,6 +73,6 @@ final class WDefinitionListRenderer extends AbstractWebXmlRenderer {
 			xml.appendEndTag("ui:term");
 		}
 
-		xml.appendEndTag("ui:definitionList");
+		xml.appendEndTag("ui:definitionlist");
 	}
 }

@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:include href="wc.ui.root.variables.xsl"/>
 	<!--
 		Template to insert a script element that loads an external javascript file.
@@ -10,13 +10,6 @@
 	-->
 	<xsl:template name="externalScript">
 		<xsl:param name="scriptName"/><!-- The name of the script without ${debug.target.file.name.suffix} or .js -->
-		<xsl:element name="script">
-			<xsl:attribute name="type">
-				<xsl:text>text/javascript</xsl:text>
-			</xsl:attribute>
-			<xsl:attribute name="src">
-				<xsl:value-of select="concat($resourceRoot, $scriptDir, '/', $scriptName, '.js?', $cacheBuster)"/>
-			</xsl:attribute>
-		</xsl:element>
+		<script type="text/javascript" src="{concat($resourceRoot, $scriptDir, '/', $scriptName, '.js?', $cacheBuster)}"></script>
 	</xsl:template>
 </xsl:stylesheet>

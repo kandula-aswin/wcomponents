@@ -3,7 +3,7 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="https://github.com/bordertech/wcomponents/namespace/ui/v1.0"
 	xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0">
 	<xs:include schemaLocation="contentGroups.xsd"/>
-	<xs:include schemaLocation="tracking.xsd"/>
+	<xs:include schemaLocation="analytic.xsd"/>
 	<xs:element name="application">
 		<xs:annotation>
 			<xs:documentation>ui:application is the XML output from WApplication. WApplication is the base component of all WComponent based UIs.</xs:documentation>
@@ -17,6 +17,8 @@
 					</xs:annotation>
 				</xs:element>
 				<xs:element name="param" type="ui:param" minOccurs="0" maxOccurs="unbounded" />
+				<xs:element name="css" type="ui:linkedResource" minOccurs="0" maxOccurs="unbounded"/>
+				<xs:element name="js" type="ui:linkedResource" minOccurs="0" maxOccurs="unbounded"/>
 				<xs:group ref="ui:contentGroup" minOccurs="0" maxOccurs="unbounded"/>
 			</xs:sequence>
 
@@ -42,13 +44,6 @@
 				<xs:annotation>
 					<xs:documentation>The URL to which the application's asynchronous HTTP requests are sent. <strong>NOTE:</strong> this attribute is under review as it is no
 						longer necessarily a URL different from applicationUrl.</xs:documentation>
-				</xs:annotation>
-			</xs:attribute>
-
-			<xs:attribute name="dataUrl" type="xs:anyURI" use="required">
-				<xs:annotation>
-					<xs:documentation>The URL to which the AJAX requests for data lists are sent. <strong>NOTE:</strong> this attribute is under review as it is now the same as
-						ajaxUrl.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 
@@ -86,5 +81,12 @@
 
 		<xs:attribute name="name" use="required" type="xs:string" />
 		<xs:attribute name="value" use="required" type="xs:string" />
+	</xs:complexType>
+	
+	<xs:complexType name="linkedResource">
+		<xs:annotation>
+			<xs:documentation>Links to an application's custom CSS and JavaScript file(s).</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="url" use="required" type="xs:string" />
 	</xs:complexType>
 </xs:schema>

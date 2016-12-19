@@ -3,7 +3,6 @@ package com.github.bordertech.wcomponents.test.selenium;
 import com.github.bordertech.wcomponents.ComponentWithContext;
 import com.github.bordertech.wcomponents.UIContext;
 import com.github.bordertech.wcomponents.UIContextHolder;
-import com.github.bordertech.wcomponents.UIContextImpl;
 import com.github.bordertech.wcomponents.WComponent;
 import com.github.bordertech.wcomponents.util.TreeUtil;
 import java.util.ArrayList;
@@ -12,11 +11,11 @@ import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.internal.FindsById;
-import org.openqa.selenium.internal.FindsByName;
-import org.openqa.selenium.internal.FindsByXPath;
 
 /**
+ * <p>
+ * This By implementation will only work if the servlet is running in the same JVM as the test. While this is the
+ * easiest way to write tests, those tests will not be reusable for verifying environments.</p>
  * <p>
  * An implementation of By which can find HTML elements which correspond to (most) WComponents. Only WComponents which
  * emit elements with ids can be searched on. This means that components such as WText and "WComponent" itself can not
@@ -32,27 +31,12 @@ import org.openqa.selenium.internal.FindsByXPath;
  * @author Yiannis Paschalidis
  * @since 1.0.0
  */
-public class ByWComponentPath extends By {
+public class ByWComponentPath extends ByWComponent {
 
 	/**
 	 * The component to search for.
 	 */
 	private final String[] path;
-
-	/**
-	 * The component to search from.
-	 */
-	private final WComponent component;
-
-	/**
-	 * The context to search in.
-	 */
-	private final UIContext context;
-
-	/**
-	 * The value to search for, for lists, radio button groups, etc.
-	 */
-	private final Object value;
 
 	/**
 	 * The class of the WComponent which was found (if any).
@@ -100,10 +84,8 @@ public class ByWComponentPath extends By {
 	 */
 	public ByWComponentPath(final WComponent component, final UIContext context, final String path,
 			final Object value) {
-		this.component = component;
-		this.context = context == null ? new UIContextImpl() : context;
+		super(component, context, value);
 		this.path = path.split("/");
-		this.value = value;
 	}
 
 	/**
@@ -114,10 +96,10 @@ public class ByWComponentPath extends By {
 		List<WebElement> result = new ArrayList<>();
 		ComponentWithContext[] components = null;
 
-		UIContextHolder.pushContext(context);
+		UIContextHolder.pushContext(getContext());
 
 		try {
-			components = TreeUtil.findWComponents(component, path);
+			components = TreeUtil.findWComponents(getComponent(), path);
 		} finally {
 			UIContextHolder.popContext();
 		}
@@ -131,29 +113,9 @@ public class ByWComponentPath extends By {
 			UIContext cmpUic = comp.getContext();
 			UIContextHolder.pushContext(cmpUic);
 
-			List<WebElement> resultForComp = null;
+			List<WebElement> resultForComp = findElement(searchContext, cmpUic, cmp, getValue());
 
-			try {
-				if (searchContext instanceof FindsById) {
-					String componentId = cmp.getId();
-					resultForComp = ((FindsById) searchContext).findElementsById(componentId);
-				} else if (searchContext instanceof FindsByName) {
-					String name = cmp.getId();
-					resultForComp = ((FindsByName) searchContext).findElementsByName(name);
-				} else {
-					String componentId = cmp.getId();
-					resultForComp = ((FindsByXPath) searchContext).findElementsByXPath(
-							"*[@id = '" + componentId + "']");
-				}
-			} finally {
-				UIContextHolder.popContext();
-			}
-
-			// Narrow the results, if applicable
-			if (resultForComp != null) {
-				SeleniumUtil.narrowResults(resultForComp, cmp, cmpUic, value);
-				result.addAll(resultForComp);
-			}
+			result.addAll(resultForComp);
 		}
 
 		return result;
@@ -165,12 +127,13 @@ public class ByWComponentPath extends By {
 	@Override
 	public String toString() {
 		return "ByWComponentPath:" + Arrays.asList(path)
-				+ (value == null ? "" : (" with value \"" + value + '"'));
+				+ (getValue() == null ? "" : (" with value \"" + getValue() + '"'));
 	}
 
 	/**
 	 * @return the class of the target WComponent
 	 */
+	@Override
 	public Class<? extends WComponent> getTargetWComponentClass() {
 		return componentClass;
 	}

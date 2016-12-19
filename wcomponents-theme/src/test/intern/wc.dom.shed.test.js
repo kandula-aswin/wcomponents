@@ -1,9 +1,9 @@
-define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
+define(["intern!object", "intern/chai!assert", "./resources/test.utils!"],
 	function(registerSuite, assert, testutils) {
 		"use strict";
 
 		var controller, testHolder,
-			urlResource = "../../target/test-classes/wcomponents-theme/intern/resources/domShed.html";
+			urlResource = "@RESOURCES@/domShed.html";
 
 		function _withSubscribeHelper(id, action) {
 			var element = document.getElementById(id),
@@ -26,13 +26,13 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 		registerSuite({
 			name: "Shed",
 			setup: function() {
-				var result = new testutils.LamePromisePolyFill();
-				testutils.setupHelper(["wc/dom/shed"], function(obj) {
-					controller = obj;
+				var result = testutils.setupHelper(["wc/dom/shed"]).then(function(arr) {
+					controller = arr[0];
 					testHolder = testutils.getTestHolder();
-					testutils.setUpExternalHTML(urlResource, testHolder).then(result._resolve);
+					return testutils.setUpExternalHTML(urlResource, testHolder);
 				});
 				return result;
+
 			},
 			teardown: function() {
 				testHolder.innerHTML = "";
@@ -208,6 +208,10 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 			},
 			testSelectFauxRadio: function() {
 				var element = document.getElementById("fauxRad1");
+				if (controller.isSelected(element)) {
+					// order of tests should not be important
+					controller.deselect(element);
+				}
 				assert.isFalse(controller.isSelected(element));
 				controller.select(element);
 				assert.isTrue(controller.isSelected(element));
@@ -262,7 +266,11 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 			},
 			testDeselectFauxRadio: function() {
 				var element = document.getElementById("fauxRad2");
-				assert.isTrue(controller.isSelected(element));
+				// race condition: depends on order of tests
+				// assert.isTrue(controller.isSelected(element));
+				if (!controller.isSelected(element)) {
+					controller.select(element);
+				}
 				controller.deselect(element);
 				assert.isFalse(controller.isSelected(element));
 			},
@@ -521,11 +529,53 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 			testHasDisabledAncestorFalse: function() {
 				assert.isFalse(controller.hasDisabledAncestor(document.getElementById("radioButtonGroup4_1")));
 			},
-			testHasHiddenAncestor: function() {
-				assert.isTrue(controller.hasHiddenAncestor(document.getElementById("radioButtonGroup4_1")));
+			testIsHiddenByAncestor: function() {
+				var test = document.getElementById("visibletests1");
+				assert.isFalse(controller.isHidden(test));
 			},
-			testHasHiddenAncestorFalse: function() {
-				assert.isFalse(controller.hasHiddenAncestor(document.getElementById("radioButtonGroup3_1")));
+			testIsHiddenByAncestorWithDisplay: function() {
+				var parent = document.getElementById("visibletests"),
+					test = document.getElementById("visibletests1");
+				try {
+					parent.style.display = "none";
+					assert.isTrue(controller.isHidden(test));
+				}
+				finally {
+					parent.style.display = "";
+				}
+			},
+			testIsHiddenByAncestorWithVisibility: function() {
+				var parent = document.getElementById("visibletests"),
+					test = document.getElementById("visibletests1");
+				try {
+					parent.style.visibility = "hidden";
+					assert.isTrue(controller.isHidden(test));
+				}
+				finally {
+					parent.style.visibility = "";
+				}
+			},
+			testIsHiddenByAncestorWithHidden: function() {
+				var parent = document.getElementById("visibletests"),
+					test = document.getElementById("visibletests1");
+				try {
+					parent.setAttribute("hidden", "hidden");
+					assert.isTrue(controller.isHidden(test));
+				}
+				finally {
+					parent.removeAttribute("hidden");
+				}
+			},
+			testIsHiddenByAncestorWithShedHide: function() {
+				var parent = document.getElementById("visibletests"),
+					test = document.getElementById("visibletests1");
+				try {
+					controller.hide(parent);
+					assert.isTrue(controller.isHidden(test));
+				}
+				finally {
+					controller.show(parent);
+				}
 			}
 		});
 	});

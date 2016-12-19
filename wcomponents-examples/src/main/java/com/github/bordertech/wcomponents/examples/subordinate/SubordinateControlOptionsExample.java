@@ -3,6 +3,7 @@ package com.github.bordertech.wcomponents.examples.subordinate;
 import com.github.bordertech.wcomponents.Action;
 import com.github.bordertech.wcomponents.ActionEvent;
 import com.github.bordertech.wcomponents.Disableable;
+import com.github.bordertech.wcomponents.HeadingLevel;
 import com.github.bordertech.wcomponents.Input;
 import com.github.bordertech.wcomponents.RadioButtonGroup;
 import com.github.bordertech.wcomponents.Request;
@@ -85,6 +86,8 @@ public class SubordinateControlOptionsExample extends WContainer {
 	 */
 	private final WTextField targetTextField = new WTextField();
 
+	private final WRadioButtonSelect targetRadioButtonSelect = new WRadioButtonSelect("australian_state");
+
 	/**
 	 * Target textFieldSet.
 	 */
@@ -108,6 +111,12 @@ public class SubordinateControlOptionsExample extends WContainer {
 	 * Target WField3.
 	 */
 	private final WField targetField3 = targetFieldLayout.addField("TextField 3", new WTextField());
+
+	/**
+	 * Field holding the WRadioButtonSelect target.
+	 */
+	private final WField targetFieldRBSelect = targetFieldLayout.addField("Target radio button select",
+			targetRadioButtonSelect);
 
 	/**
 	 * Target WComponentGroup.
@@ -225,6 +234,11 @@ public class SubordinateControlOptionsExample extends WContainer {
 	 * Disabled trigger.
 	 */
 	private final WCheckBox cbDisableTrigger = new WCheckBox();
+
+	/**
+	 * Client side disable/enable trigger.
+	 */
+	private final WCheckBox cbClientDisableTrigger = new WCheckBox();
 
 	/**
 	 * Readonly trigger.
@@ -375,12 +389,16 @@ public class SubordinateControlOptionsExample extends WContainer {
 		/**
 		 * WFieldSet target.
 		 */
-		WFIELDSET("WFieldSet");
+		WFIELDSET("WFieldSet"),
+		/**
+		 * WRadioButtonSelect target.
+		 */
+		WRADIOBUTTONSELECT("WRadioButtonSelect");
 
 		/**
 		 * Description of action.
 		 */
-		private String desc;
+		private final String desc;
 
 		/**
 		 * @param desc the description of the target.
@@ -484,6 +502,8 @@ public class SubordinateControlOptionsExample extends WContainer {
 		triggerConfigSet.add(triggerConfigLayout);
 		triggerConfigLayout.addField("Disable Trigger", cbDisableTrigger);
 		triggerConfigLayout.addField("ReadOnly Trigger", cbReadOnlyTrigger);
+
+		triggerConfigLayout.addField("client disable trigger", cbClientDisableTrigger);
 		triggerConfigLayout.setLabelWidth(LABEL_WIDTH);
 
 		// Build Panel for Control/Target
@@ -493,13 +513,13 @@ public class SubordinateControlOptionsExample extends WContainer {
 		buildPanel.setVisible(false);
 
 		// Control
-		buildPanel.add(new WHeading(WHeading.SECTION, "Control"));
+		buildPanel.add(new WHeading(HeadingLevel.H3, "Control"));
 		buildPanel.add(buildControlPanel);
 
 		buildPanel.add(new WHorizontalRule());
 
 		// Target
-		buildPanel.add(new WHeading(WHeading.SECTION, "Target"));
+		buildPanel.add(new WHeading(HeadingLevel.H3, "Target"));
 		buildPanel.add(buildTargetPanel);
 		buildPanel.add(new WHorizontalRule());
 		buildPanel.add(new WButton("submit"));
@@ -554,6 +574,7 @@ public class SubordinateControlOptionsExample extends WContainer {
 		targetGroup.addToGroup(targetField1);
 		targetGroup.addToGroup(targetField2);
 		targetGroup.addToGroup(targetField3);
+		targetGroup.addToGroup(targetFieldRBSelect);
 		targetPanel.add(targetGroup);
 
 		// Set default options in String combo
@@ -639,10 +660,14 @@ public class SubordinateControlOptionsExample extends WContainer {
 
 		buildControlPanel.add(control);
 
-		if (trigger.getLabel() != null) {
-			trigger.getLabel().setHint(control.toString());
+		if (targetCollapsible.getDecoratedLabel() != null) {
+			targetCollapsible.getDecoratedLabel().setTail(new WText(control.toString()));
 		}
 
+		control = new WSubordinateControl();
+		rule = new Rule(new Equal(cbClientDisableTrigger, true), new Disable((SubordinateTarget) trigger), new Enable((SubordinateTarget) trigger));
+		control.addRule(rule);
+		buildControlPanel.add(control);
 	}
 
 	/**
@@ -732,6 +757,7 @@ public class SubordinateControlOptionsExample extends WContainer {
 
 			case TextArea:
 				trigger = new WTextArea();
+				((WTextArea) trigger).setMaxLength(1000);
 				break;
 
 			case TextField:
@@ -741,7 +767,6 @@ public class SubordinateControlOptionsExample extends WContainer {
 			default:
 				throw new SystemException("Trigger type not valid");
 		}
-
 		layout.addField(label, trigger);
 	}
 
@@ -769,6 +794,10 @@ public class SubordinateControlOptionsExample extends WContainer {
 
 			case WTEXTFIELD:
 				target = targetTextField;
+				break;
+
+			case WRADIOBUTTONSELECT:
+				target = targetRadioButtonSelect;
 				break;
 
 			default:

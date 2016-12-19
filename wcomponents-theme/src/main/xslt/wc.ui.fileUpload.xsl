@@ -1,4 +1,6 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+	xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" 
+	xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.ui.fileUpload.file.n.fileInput.xsl"/>
 	<xsl:import href="wc.common.readOnly.xsl"/>
 	<xsl:import href="wc.common.ajax.xsl"/>
@@ -15,26 +17,35 @@
 		wrapped in a container with the component ID. The compound control consists of
 		the file input and the list of files.
 	-->
-	<xsl:template match="ui:fileUpload">
+	<xsl:template match="ui:fileupload">
 		<xsl:variable name="id" select="@id"/>
 		<xsl:variable name="isError" select="key('errorKey',$id)"/>
 		<xsl:variable name="readOnly">
-			<xsl:if test="@readOnly">
-				<xsl:number value="1"/>
-			</xsl:if>
+			<xsl:choose>
+				<xsl:when test="@readOnly">
+					<xsl:number value="1"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:number value="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
 		<xsl:variable name="legacy">
-			<xsl:if test="@async='false'">
-				<xsl:number value="1"/>
-			</xsl:if>
+			<xsl:choose>
+				<xsl:when test="@async eq 'false'">
+					<xsl:number value="1"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:number value="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
-		<xsl:variable name="maxFiles" select="@maxFiles"/>
 		<xsl:variable name="myLabel" select="key('labelKey',$id)[1]"/>
 
 		<xsl:variable name="cols">
 			<xsl:choose>
 				<xsl:when test="@cols">
-					<xsl:value-of select="@cols"/>
+					<xsl:number value="number(@cols)"/>
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:number value="0"/>
@@ -43,12 +54,12 @@
 		</xsl:variable>
 
 		<xsl:choose>
-			<xsl:when test="$readOnly=1 and $legacy=1">
+			<xsl:when test="number($readOnly) eq 1 and number($legacy) eq 1">
 				<xsl:call-template name="readOnlyControl">
 					<xsl:with-param name="label" select="$myLabel"/>
 				</xsl:call-template>
 			</xsl:when>
-			<xsl:when test="$legacy=1">
+			<xsl:when test="number($legacy) eq 1">
 				<xsl:call-template name="fileInput">
 					<xsl:with-param name="id" select="$id"/>
 				</xsl:call-template>
@@ -58,64 +69,73 @@
 			</xsl:when>
 			<xsl:otherwise>
 				<xsl:variable name="containerTag">
-					<xsl:if test="$readOnly!=1">
-						<xsl:text>fieldset</xsl:text>
-					</xsl:if>
-					<xsl:if test="$readOnly=1">
-						<xsl:text>div</xsl:text>
-					</xsl:if>
+					<xsl:choose>
+						<xsl:when test="number($readOnly) eq 1">
+							<xsl:text>div</xsl:text>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:text>fieldset</xsl:text>
+						</xsl:otherwise>
+					</xsl:choose>
 				</xsl:variable>
 				<xsl:element name="{$containerTag}">
 					<xsl:call-template name="commonWrapperAttributes">
 						<xsl:with-param name="isError" select="$isError"/>
 						<xsl:with-param name="myLabel" select="$myLabel"/>
+						<xsl:with-param name="class">
+							<xsl:choose>
+								<xsl:when test="number($readOnly) eq 1">
+									<xsl:text>wc_ro</xsl:text>
+								</xsl:when>
+								<xsl:when test="@ajax">
+									<xsl:text>wc-ajax</xsl:text>
+								</xsl:when>
+							</xsl:choose>
+							<xsl:if test="number($readOnly) eq 1">
+								<xsl:text>wc_ro</xsl:text>
+							</xsl:if>
+						</xsl:with-param>
 					</xsl:call-template>
-					<xsl:if test="@ajax=$t">
-						<xsl:attribute name="data-wc-ajaxalias">
-							<xsl:value-of select="@id"/>
-						</xsl:attribute>
-					</xsl:if>
 					<xsl:attribute name="data-wc-cols">
 						<xsl:value-of select="$cols"/>
 					</xsl:attribute>
-					<xsl:if test="$readOnly!=1">
-						<xsl:call-template name="makeLegend">
-							<xsl:with-param name="myLabel" select="$myLabel"/>
-						</xsl:call-template>
-
-						<xsl:variable name="inputId" select="concat($id,generate-id())"/>
-						<xsl:element name="label">
-							<xsl:attribute name="class">
-								<xsl:text>wc_off</xsl:text>
-							</xsl:attribute>
-							<xsl:attribute name="for">
-								<xsl:value-of select="$inputId"/>
-							</xsl:attribute>
-							<xsl:value-of select="$$${wc.ui.multiFileUploader.i18n.inputLabel}"/>
-						</xsl:element>
-						<xsl:call-template name="fileInput">
-							<xsl:with-param name="id" select="$inputId"/>
-						</xsl:call-template>
-						<xsl:call-template name="inlineError">
-							<xsl:with-param name="errors" select="$isError"/>
-						</xsl:call-template>
-					</xsl:if>
+					<xsl:choose>
+						<xsl:when test="number($readOnly) eq 1">
+							<xsl:call-template name="title"/>
+							<xsl:call-template name="roComponentName"/>
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:call-template name="makeLegend">
+								<xsl:with-param name="myLabel" select="$myLabel"/>
+							</xsl:call-template>
+							<xsl:variable name="inputId" select="concat($id,'_input')"/>
+							<label class="wc-off" for="{$inputId}">
+								<xsl:text>{{t 'file_inputLabel'}}</xsl:text>
+							</label>
+							<xsl:call-template name="fileInput">
+								<xsl:with-param name="id" select="$inputId"/>
+							</xsl:call-template>
+							<xsl:call-template name="inlineError">
+								<xsl:with-param name="errors" select="$isError"/>
+							</xsl:call-template>
+						</xsl:otherwise>
+					</xsl:choose>
 					<xsl:if test="ui:file">
 						<xsl:variable name="numFiles" select="count(ui:file)"/>
 						<xsl:choose>
-							<xsl:when test="$cols &gt; 1 and $cols &gt;= $numFiles">
+							<xsl:when test="number($cols) gt 1 and number($cols) ge number($numFiles)">
 								<div class="wc_files">
 									<xsl:apply-templates select="ui:file[1]" mode="columns">
-										<xsl:with-param name="rows" select="$numFiles"/>
+										<xsl:with-param name="rows" select="number($numFiles)"/>
 									</xsl:apply-templates>
 								</div>
 							</xsl:when>
-							<xsl:when test="$cols &gt; 1">
+							<xsl:when test="number($cols) gt 1">
 								<xsl:variable name="rows">
-									<xsl:value-of select="ceiling($numFiles div $cols)"/>
+									<xsl:value-of select="ceiling(number($numFiles) div number($cols))"/>
 								</xsl:variable>
 								<div class="wc_files">
-									<xsl:apply-templates select="ui:file[position() mod $rows = 1]" mode="columns">
+									<xsl:apply-templates select="ui:file[position() mod number($rows) eq 1]" mode="columns">
 										<xsl:with-param name="rows" select="$rows"/>
 									</xsl:apply-templates>
 								</div>
@@ -123,9 +143,9 @@
 							<xsl:otherwise>
 								<ul>
 									<xsl:attribute name="class">
-										<xsl:text>wc_filelist wc_list_nb</xsl:text>
-										<xsl:if test="$cols = 0">
-											<xsl:text> wc_list_flat</xsl:text>
+										<xsl:text>wc_list_nb wc_filelist</xsl:text>
+										<xsl:if test="number($cols) eq 0">
+											<xsl:text> wc-listlayout-type-flat</xsl:text>
 										</xsl:if>
 									</xsl:attribute>
 									<xsl:apply-templates select="ui:file"/>

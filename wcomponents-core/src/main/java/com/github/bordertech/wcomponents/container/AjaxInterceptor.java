@@ -14,7 +14,6 @@ import com.github.bordertech.wcomponents.XmlStringBuilder;
 import com.github.bordertech.wcomponents.servlet.WServlet;
 import com.github.bordertech.wcomponents.servlet.WebXmlRenderContext;
 import com.github.bordertech.wcomponents.util.SystemException;
-import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -123,9 +122,9 @@ public class AjaxInterceptor extends InterceptorComponent {
 			throw new SystemException("No context available for trigger " + operation.getTriggerId());
 		}
 
-		xml.appendTagOpen("ui:ajaxTarget");
+		xml.appendTagOpen("ui:ajaxtarget");
 		xml.appendAttribute("id", operation.getTargetContainerId());
-		xml.appendAttribute("action", "replaceContent");
+		xml.appendAttribute("action", AjaxOperation.AjaxAction.REPLACE_CONTENT.getDesc());
 		xml.appendClose();
 
 		// Paint targets - Assume targets are in the same context as the trigger
@@ -148,7 +147,7 @@ public class AjaxInterceptor extends InterceptorComponent {
 			UIContextHolder.popContext();
 		}
 
-		xml.appendEndTag("ui:ajaxTarget");
+		xml.appendEndTag("ui:ajaxtarget");
 	}
 
 	/**
@@ -181,14 +180,14 @@ public class AjaxInterceptor extends InterceptorComponent {
 
 			UIContextHolder.pushContext(target.getContext());
 			try {
-				xml.appendTagOpen("ui:ajaxTarget");
+				xml.appendTagOpen("ui:ajaxtarget");
 				xml.appendAttribute("id", targetId);
-				xml.appendAttribute("action", "replace");
+				xml.appendAttribute("action", operation.getAction().getDesc());
 				xml.appendClose();
 
 				target.getComponent().paint(renderContext);
 
-				xml.appendEndTag("ui:ajaxTarget");
+				xml.appendEndTag("ui:ajaxtarget");
 			} finally {
 				UIContextHolder.popContext();
 			}
@@ -204,8 +203,9 @@ public class AjaxInterceptor extends InterceptorComponent {
 	 */
 	private boolean isProcessTriggerOnly(final ComponentWithContext triggerWithContext,
 			final AjaxOperation operation) {
-		// Target container implies only process the trigger
-		if (operation.getTargetContainerId() != null) {
+
+		// Target container implies only process the trigger or is Internal Ajax
+		if (operation.getTargetContainerId() != null || operation.isInternalAjaxRequest()) {
 			return true;
 		}
 
@@ -227,12 +227,7 @@ public class AjaxInterceptor extends InterceptorComponent {
 			}
 		}
 
-		// Check if the operation only has one target and it is the same as the trigger
-		List<String> targets = operation.getTargets();
-		if (targets == null || targets.isEmpty() || targets.size() > 1) {
-			return false;
-		}
-		return operation.getTriggerId().equals(targets.get(0));
+		return false;
 	}
 
 }

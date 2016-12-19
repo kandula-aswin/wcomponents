@@ -1,6 +1,9 @@
 /**
- * Provides a mechanism to warn a user of pending navigation or cancel invokation which may result in user initiated
+ * Provides a mechanism to warn a user of pending navigation or cancel invocation which may result in user initiated
  * changes from being lost or discarded.
+ *
+ * I suggest erring on the side of NOT nagging. Yes, the user may lose work if we get it wrong this way but the alternative is that they get used to
+ * seeing the warning message and ignoring it because it is wrong. The user needs to know that if we show that dialog we really mean it.
  *
  * @todo this should be merged into wc/dom/formUpdateManager in to solve a complex circular dependency.
  * @todo sort out the method order.
@@ -13,7 +16,8 @@
  * @requires module:wc/dom/event
  * @requires module:wc/dom/initialise
  * @requires module:wc/dom/serialize
- * @requires external:sprintf/sprintf
+ * @requires module:wc/dom/isSuccessfulElement
+ * @requires external:lib/sprintf
  * @requires module:wc/dom/Widget
  * @requires module:wc/urlParser
  * @requires module:wc/dom/formUpdateManager
@@ -25,12 +29,12 @@ define(["wc/i18n/i18n",
 		"wc/dom/event",
 		"wc/dom/initialise",
 		"wc/dom/serialize",
-		"sprintf/sprintf",
+		"wc/dom/isSuccessfulElement",
+		"lib/sprintf",
 		"wc/dom/Widget",
 		"wc/dom/formUpdateManager",
 		"wc/dom/focus"],
-	/** @param i18n wc/i18n/i18n @param triggerManager wc/ajax/triggerManager @param uid wc/dom/uid @param event wc/dom/event @param initialise wc/dom/initialise @param serialize wc/dom/serialize @param sprintf sprintf/sprintf @param Widget wc/dom/Widget @param formUpdateManager wc/dom/formUpdateManager @param focus wc/dom/focus @ignore */
-	function(i18n, triggerManager, uid, event, initialise, serialize, sprintf, Widget, formUpdateManager, focus) {
+	function(i18n, triggerManager, uid, event, initialise, serialize, isSuccessfulElement, sprintf, Widget, formUpdateManager, focus) {
 		"use strict";
 
 		/*
@@ -50,8 +54,7 @@ define(["wc/i18n/i18n",
 				// SUBMIT_CONTROL = new Widget("BUTTON", "", {"type":"submit"}),
 				CANCEL_BUTTON,
 				registry = {},
-				RECALC = "-recalc",
-				MESSAGE;
+				RECALC = "-recalc";
 
 			/**
 			 * Get the current (not stored) state of a form.
@@ -62,7 +65,16 @@ define(["wc/i18n/i18n",
 			 * @returns {String} The serialized state of the form.
 			 */
 			function getCurrentState(form) {
-				return serialize.serialize(form, true, true);
+				return serialize.serialize(form, true, true, isDirty);
+			}
+
+			/**
+			 * Filters out "clean" elements from the serialization.
+			 * @param {Element} element A state field.
+			 * @returns {Boolean} false if the element should be vetoed.
+			 */
+			function isDirty(element) {
+				return !element.hasAttribute("data-wc-clean");
 			}
 
 			/**
@@ -128,8 +140,7 @@ define(["wc/i18n/i18n",
 			 *
 			 * @function
 			 * @private
-			 * @param {type} $event
-			 * @returns {undefined}
+			 * @param {Event} $event
 			 */
 			function clickEvent($event) {
 				var element = $event.target, form, id;
@@ -158,20 +169,20 @@ define(["wc/i18n/i18n",
 			 *    to continue with the submission/navigation.
 			 */
 			function cancelSubmit(element, submitter) {
-				var title = i18n.get("${wc.dom.cancelUpdate.i18n.fallbackTitle}"),
+				var title = i18n.get("cancel_title"),
+					message = i18n.get("cancel_message"),
 					keep = true,
 					result,
 					form,
 					formTitle,
 					msg;
 				if (!loading) {
-					msg = (submitter ? submitter.getAttribute("${wc.ui.button.attrib.confirmMessage}") : "");
+					msg = (submitter ? submitter.getAttribute("data-wc-btnmsg") : "");
 					if (!msg) {
-						MESSAGE = MESSAGE || "'%s' " + i18n.get("${wc.dom.cancelUpdate.i18n.message}");
 						if ((form = FORM.findAncestor(element)) && (formTitle = form.getAttribute("title"))) {
 							title = formTitle;
 						}
-						msg = (sprintf.sprintf(MESSAGE, title, "foo"));
+						msg = (sprintf.sprintf(message, title));
 					}
 					keep = window.confirm(msg);
 				}
@@ -240,6 +251,9 @@ define(["wc/i18n/i18n",
 						storeFormState(form);
 						delete registry[key];
 					}
+					else {
+						instance.addElements(element);
+					}
 				}
 			}
 
@@ -294,13 +308,13 @@ define(["wc/i18n/i18n",
 			};
 
 			/**
-			 * Adds these element to the "initial" state of the form.
+			 * Adds these elements to the "initial" state of the form.
 			 * Call this carefully - it does not replace existing elements with the same name.
 			 *
-			 * @param {NodeList} elements A collection of elements (array or array-like).
+			 * @param {Element} element  A form control or container.
 			 */
-			this.addElements = function(elements) {
-				var i;
+			this.addElements = function(element) {
+				var i, elements = isSuccessfulElement.getAll(element, true);
 				for (i = 0; i < elements.length; i++) {
 					this.addElement(elements[i]);
 				}
@@ -310,13 +324,13 @@ define(["wc/i18n/i18n",
 			 * Adds this element to the "initial" state of the form.
 			 * Call this carefully - it does not replace existing elements with the same name.
 			 *
-			 * @param {Element} element A form element.
+			 * @param {Element} element A form control.
 			 */
 			this.addElement = function (element) {
 				var form, nodeList, oldState, newState, newKeys, next, i;
 				if (element && (form = element.form) && form.id && (oldState = registry[form.id])) {
 					nodeList = [element];
-					newState = serialize.serialize(nodeList, true, true);
+					newState = serialize.serialize(nodeList, true, true, isDirty);
 					newKeys = Object.keys(newState);
 					for (i = 0; i < newKeys.length; i++) {
 						next = newKeys[i];
@@ -334,12 +348,12 @@ define(["wc/i18n/i18n",
 			};
 
 			/**
-			 * Remove these element from the "initial" state of the form.
+			 * Remove these elements from the "initial" state of the form.
 			 *
-			 * @param {NodeList} elements A collection of elements (array or array-like).
+			 * @param {Element} element A form control or container..
 			 */
-			this.removeElements = function(elements) {
-				var i;
+			this.removeElements = function(element) {
+				var i, elements = isSuccessfulElement.getAll(element, true);
 				for (i = 0; i < elements.length; i++) {
 					this.removeElement(elements[i]);
 				}
@@ -348,13 +362,13 @@ define(["wc/i18n/i18n",
 			/**
 			 * Removes this element's current state from the "initial" state of the form.
 			 *
-			 * @param {Element} element A form element.
+			 * @param {Element} element A form control.
 			 */
 			this.removeElement = function (element) {
 				var form, nodeList, oldState, delState, newKeys, next, i, nextVal, delIdx;
 				if (element && (form = element.form) && form.id && (oldState = registry[form.id])) {
 					nodeList = [element];
-					delState = serialize.serialize(nodeList, true, true);
+					delState = serialize.serialize(nodeList, true, true, isDirty);
 					newKeys = Object.keys(delState);
 					for (i = 0; i < newKeys.length; i++) {
 						next = newKeys[i];

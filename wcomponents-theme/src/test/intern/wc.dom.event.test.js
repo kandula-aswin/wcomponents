@@ -1,4 +1,4 @@
-define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
+define(["intern!object", "intern/chai!assert", "./resources/test.utils!"],
 	function (registerSuite, assert, testutils) {
 		"use strict";
 
@@ -15,7 +15,7 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 				BUTTONINP: "btninp",
 				BUTTON: "btn"
 			},
-			urlResource = "../../target/test-classes/wcomponents-theme/intern/resources/domEvent.html",
+			urlResource = "@RESOURCES@/domEvent.html",
 			EVENT = "click",
 			called = false,
 			dom1called = false,
@@ -35,13 +35,12 @@ define(["intern!object", "intern/chai!assert", "./resources/test.utils"],
 			event.remove(element, EVENT, clickEventSelfRemoving);
 		}
 		registerSuite({
-			name: "wc/dom.event",
+			name: "wc/dom/event",
 			setup: function() {
-				var result = new testutils.LamePromisePolyFill();
-				testutils.setupHelper(["wc/dom/event"], function(obj) {
-					event = obj;
+				var result = testutils.setupHelper(["wc/dom/event"]).then(function(arr) {
+					event = arr[0];
 					testHolder = testutils.getTestHolder();
-					testutils.setUpExternalHTML(urlResource, testHolder).then(result._resolve);
+					return testutils.setUpExternalHTML(urlResource, testHolder);
 				});
 				return result;
 			},

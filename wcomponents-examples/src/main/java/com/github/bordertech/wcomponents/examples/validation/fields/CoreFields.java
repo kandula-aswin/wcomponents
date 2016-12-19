@@ -9,6 +9,7 @@ import com.github.bordertech.wcomponents.WCheckBoxSelect;
 import com.github.bordertech.wcomponents.WConfirmationButton;
 import com.github.bordertech.wcomponents.WDateField;
 import com.github.bordertech.wcomponents.WDropdown;
+import com.github.bordertech.wcomponents.WEmailField;
 import com.github.bordertech.wcomponents.WField;
 import com.github.bordertech.wcomponents.WFieldLayout;
 import com.github.bordertech.wcomponents.WFieldSet;
@@ -26,6 +27,7 @@ import com.github.bordertech.wcomponents.layout.BorderLayout;
 import com.github.bordertech.wcomponents.util.DateUtilities;
 import com.github.bordertech.wcomponents.validator.DateFieldPivotValidator;
 import com.github.bordertech.wcomponents.validator.RegExFieldValidator;
+import java.util.Date;
 
 /**
  * <p>
@@ -117,6 +119,7 @@ public class CoreFields extends WPanel {
 		WDateField df = new WDateField();
 		WField dateField = fields.addField("WDateField", df);
 		dateField.getLabel().setHint("before today");
+		df.setMaxDate(DateUtilities.roundToDay(new Date()));
 		dateField.addValidator(new DateFieldPivotValidator(DateFieldPivotValidator.BEFORE));
 		df.setToolTip("Set a date before today");
 
@@ -186,6 +189,9 @@ public class CoreFields extends WPanel {
 		WField checkboxSelectField = fields.addField("WCheckBoxSelect", new WCheckBoxSelect("sex"));
 		((WCheckBoxSelect) checkboxSelectField.getField()).setMandatory(true);
 		checkboxSelectField.getLabel().setHint("required");
+
+		// WEmailField
+		fields.addField("Email address", new WEmailField());
 
 		// create the buttons at the bottom.
 		WPanel buttons = new WPanel(WPanel.Type.FEATURE);

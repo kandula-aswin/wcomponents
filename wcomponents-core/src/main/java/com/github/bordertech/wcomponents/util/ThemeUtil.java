@@ -3,7 +3,6 @@ package com.github.bordertech.wcomponents.util;
 import com.github.bordertech.wcomponents.UIContext;
 import com.github.bordertech.wcomponents.WebUtilities;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Properties;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -20,11 +19,6 @@ public final class ThemeUtil {
 	 * The logger instance for this class.
 	 */
 	private static final Log LOG = LogFactory.getLog(ThemeUtil.class);
-
-	/**
-	 * The parameter key for the theme name.
-	 */
-	private static final String THEME_PARAM = "bordertech.wcomponents.theme.name";
 
 	/**
 	 * The theme build version number.
@@ -46,12 +40,19 @@ public final class ThemeUtil {
 	 */
 	private static final String THEME_WC_BUILD_NUMBER_PARAM = "wc.project.version";
 
+	private static final String THEME_NAME;
+
+	/**
+	 * The base This assumes theme names do not change on the fly and a restart is acceptable if they do.
+	 */
+	private static final String THEME_BASE;
+
 	static {
-		// Get theme name
-		String name = getThemeName();
+		THEME_NAME = ConfigurationProperties.getThemeName();
+		THEME_BASE = "/theme/" + THEME_NAME + '/';
 
 		// Load theme build (depends on the theme name)
-		String resourceName = "/theme/" + name + '/' + THEME_VERSION_FILE_NAME;
+		String resourceName = THEME_BASE + THEME_VERSION_FILE_NAME;
 
 		// Get theme version property file (if in classpath)
 		InputStream resourceStream = null;
@@ -83,7 +84,7 @@ public final class ThemeUtil {
 			THEME_BUILD = themeBuild;
 		}
 
-		LOG.info("Using theme \"" + name + "\"" + " build \"" + THEME_BUILD + "\"");
+		LOG.info("Using theme \"" + THEME_NAME + "\"" + " build \"" + THEME_BUILD + "\"");
 
 		// Check the theme wcomponent version against the project wcomponent version
 		if (themeWcVersion != null) {
@@ -102,10 +103,12 @@ public final class ThemeUtil {
 	}
 
 	/**
+	 * The theme name as determined on instantiation. Changes require a restart.
+	 *
 	 * @return the current theme name
 	 */
 	public static String getThemeName() {
-		return Config.getInstance().getString(THEME_PARAM);
+		return THEME_NAME;
 	}
 
 	/**
@@ -113,6 +116,15 @@ public final class ThemeUtil {
 	 */
 	public static String getThemeBuild() {
 		return THEME_BUILD;
+	}
+
+	/**
+	 * Gets the base path of the theme resources. Note that this path will end with a forward slash.
+	 *
+	 * @return The theme resource path.
+	 */
+	public static String getThemeBase() {
+		return THEME_BASE;
 	}
 
 	/**
@@ -137,51 +149,35 @@ public final class ThemeUtil {
 			path.append('/');
 		}
 		path.append("xslt/");
-		path.append(getThemeXsltName(uic));
+		path.append(getThemeXsltName());
 
 		// Add cache busting suffix
-		String build = getThemeBuild();
-		String themeName = getThemeName();
-
-		path.append("?build=").append(WebUtilities.escapeForUrl(build))
-				.append("&theme=").append(WebUtilities.escapeForUrl(themeName));
+		path.append("?build=").append(WebUtilities.escapeForUrl(THEME_BUILD))
+				.append("&theme=").append(WebUtilities.escapeForUrl(THEME_NAME));
 
 		return path.toString();
 	}
 
 	/**
 	 * Get the name of the XSLT file to use taking locale and debug mode into consideration.
+	 *
 	 * @param uic The UIContext to use to determine factors such as locale.
 	 * @return The name of the XSLT file without any path or cachebuster.
+	 * @deprecated UIC no longer used as an argument, kept only for API compatibility. Use getThemeXsltName() instead.
 	 */
 	public static String getThemeXsltName(final UIContext uic) {
-		Locale locale = uic.getLocale();
-		StringBuffer xsltName = new StringBuffer(20);
-
-		// Base file name
-		xsltName.append("all");
-
-		// Locale
-		if (locale != null) {
-			xsltName.append('_').append(locale.getLanguage());
-
-			if (!Util.empty(locale.getCountry())) {
-				xsltName.append('-').append(locale.getCountry());
-
-				if (!Util.empty(locale.getVariant())) {
-					xsltName.append('-').append(locale.getVariant());
-				}
-			}
-		}
-
-		// Debug
-		if (DebugUtil.isDebugStructureEnabled()) {
-			xsltName.append("_debug");
-		}
-
-		// xsl
-		xsltName.append(".xsl");
-		return xsltName.toString();
+		return getThemeXsltName();
 	}
 
+	/**
+	 * Get the name of the XSLT file to use taking debug mode into consideration.
+	 *
+	 * @return The name of the XSLT file without any path or cachebuster.
+	 */
+	public static String getThemeXsltName() {
+		if (DebugUtil.isDebugStructureEnabled()) {
+			return "all_debug.xsl";
+		}
+		return "all.xsl";
+	}
 }

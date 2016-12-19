@@ -8,7 +8,7 @@
 	<parent>
 		<groupId>com.github.bordertech.wcomponents</groupId>
 		<artifactId>wcomponents-parent</artifactId>
-		<version>1.0.2-SNAPSHOT</version>
+		<version>1.3.2-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -24,7 +24,6 @@
 		<npm.download.root>http://registry.npmjs.org/npm/-/</npm.download.root>
 		<!--<node.sass.download.root>https://github.com/sass/node-sass/releases/download</node.sass.download.root>-->
 		<phantomjs.download.root>https://repo1.maven.org/maven2/com/github/klieber/phantomjs/2.0.0</phantomjs.download.root>
-
 		<theme.dir>${basedir}</theme.dir>
 		<theme.default.name>wcomponents-theme</theme.default.name>
 		<theme.unpacked.name>theme_unpacked</theme.unpacked.name>
@@ -33,6 +32,7 @@
 		<theme.impl.dir>${theme.tmp.dir}/fakeImplRoot</theme.impl.dir>
 		<theme.impl.name />
 		<theme.unpack.dir>${project.build.directory}${file.separator}${theme.unpacked.name}</theme.unpack.dir>
+		<i18n.unpack.dir>${project.build.directory}${file.separator}i18n-unpacked</i18n.unpack.dir>
 		<nodejs.dist.dir>${project.build.directory}/nodejsdist</nodejs.dist.dir><!-- The nodejs binaries get unpacked to here -->
 		<nodejs.dir>${basedir}/node</nodejs.dir><!-- Where we expect to find Node installed -->
 		<npmjs.dir>${nodejs.dir}/node_modules/npm/bin</npmjs.dir><!-- Where we expect to find NPM installed -->
@@ -42,6 +42,8 @@
 		<wc.project.version>${project.version}</wc.project.version><!-- Child projects should override this to the version of WComponents they use -->
 		<xsltjson.download.url>https://github.com/bramstein/xsltjson/archive/master.zip</xsltjson.download.url>
 		<xsltjson.dir>${project.build.directory}/xsltjson</xsltjson.dir><!-- Convert XML to JSON at build time -->
+		<timezonedata.download.url>http://www.iana.org/time-zones/repository/tzdata-latest.tar.gz</timezonedata.download.url>
+		<timezone.dir>${project.build.directory}/timezone</timezone.dir><!-- Fetch Timezone Database -->
 	</properties>
 
 	<build>
@@ -113,6 +115,26 @@
 							</artifactItems>
 						</configuration>
 					</execution>
+					<execution>
+						<id>unpack-i18n</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<skip>${theme.skip.antrun}</skip>
+							<outputDirectory>${i18n.unpack.dir}</outputDirectory>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.github.bordertech.wcomponents</groupId>
+									<artifactId>wcomponents-i18n</artifactId>
+									<version>${wc.project.version}</version>
+									<overWrite>true</overWrite>
+									<type>jar</type>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 
@@ -142,17 +164,29 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<skip>${mobile.skip.executions}</skip>
+							<skip>${theme.skip.antrun}</skip>
 							<url>${xsltjson.download.url}</url>
 							<unpack>false</unpack>
 							<outputDirectory>${xsltjson.dir}</outputDirectory>
+						</configuration>
+					</execution>
+					<execution>
+						<id>fetch-timezonedb</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>wget</goal>
+						</goals>
+						<configuration>
+							<skip>${theme.skip.antrun}</skip>
+							<url>${timezonedata.download.url}</url>
+							<unpack>true</unpack>
+							<outputDirectory>${timezone.dir}</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.8</version>
 				<executions>
 					<execution>
 						<id>compile</id>
@@ -168,6 +202,7 @@
 								<property name="build.number" value="${project.version}" />
 								<property name="build.rootdir" location="${theme.target.dir}" />
 								<property name="theme.skip.tests" value="true" />
+								<property name="maven.plugin.classpath" refid="maven.plugin.classpath" />
 								<ant antfile="${theme.core.dir}/build.xml">
 									<target name="build" />
 								</ant>
@@ -180,7 +215,7 @@
 					<execution>
 						<id>test</id>
 						<phase>test</phase>
-						<configuration>`
+						<configuration>
 							<skip>${theme.skip.antrun}</skip>
 							<target>
 								<echo>Attempting to start ANT test at ${theme.core.dir}</echo>
@@ -192,6 +227,7 @@
 								<property name="build.number" value="${project.version}" />
 								<property name="build.rootdir" location="${theme.target.dir}" />
 								<property name="theme.skip.tests" value="${skipOptionalTests}" />
+								<property name="maven.plugin.classpath" refid="maven.plugin.classpath" />
 								<!--<property name="theme.skip.tests" value="${skipOptionalTests}" />-->
 								<ant antfile="${theme.core.dir}/build.xml">
 									<target name="test" />
@@ -216,6 +252,7 @@
 								<property name="build.number" value="${project.version}" />
 								<property name="build.rootdir" location="${theme.target.dir}" />
 								<property name="theme.skip.tests" value="true" />
+								<property name="maven.plugin.classpath" refid="maven.plugin.classpath" />
 								<ant antfile="${theme.core.dir}/build.xml">
 									<target name="document" />
 								</ant>
@@ -228,25 +265,14 @@
 				</executions>
 				<dependencies>
 					<dependency>
-						<groupId>com.cathive.sass</groupId>
-						<artifactId>sass-java</artifactId>
-						<version>4.0.0</version>
+						<groupId>org.fedorahosted.tennera</groupId>
+						<artifactId>ant-gettext</artifactId>
+						<version>0.9</version>
 					</dependency>
 					<dependency>
-						<groupId>ant-contrib</groupId>
-						<artifactId>ant-contrib</artifactId>
-						<version>1.0b3</version>
-						<exclusions>
-							<exclusion>
-								<groupId>ant</groupId>
-								<artifactId>ant</artifactId>
-							</exclusion>
-						</exclusions>
-					</dependency>
-					<dependency>
-						<groupId>org.apache.ant</groupId>
-						<artifactId>ant</artifactId>
-						<version>1.9.6</version>
+						<groupId>com.github.bordertech.wcomponents</groupId>
+						<artifactId>wcomponents-sass-compiler</artifactId>
+						<version>1.0.0</version>
 					</dependency>
 					<dependency>
 						<groupId>commons-io</groupId>

@@ -5,6 +5,7 @@ import com.github.bordertech.wcomponents.Renderer;
 import com.github.bordertech.wcomponents.WButton;
 import com.github.bordertech.wcomponents.WButton.ImagePosition;
 import com.github.bordertech.wcomponents.WComponent;
+import com.github.bordertech.wcomponents.WImage;
 import com.github.bordertech.wcomponents.XmlStringBuilder;
 import com.github.bordertech.wcomponents.servlet.WebXmlRenderContext;
 import com.github.bordertech.wcomponents.util.SystemException;
@@ -31,8 +32,10 @@ class WButtonRenderer extends AbstractWebXmlRenderer {
 		WButton button = (WButton) component;
 		String text = button.getText();
 		String imageUrl = button.getImageUrl();
+		String accessibleText = button.getAccessibleText();
+		String toolTip = button.getToolTip();
 
-		if (Util.empty(text) && imageUrl == null) {
+		if (Util.empty(text) && imageUrl == null && Util.empty(accessibleText) && Util.empty(toolTip)) {
 			throw new SystemException("WButton text or imageUrl must be specified");
 		}
 
@@ -43,13 +46,14 @@ class WButtonRenderer extends AbstractWebXmlRenderer {
 		xml.appendOptionalAttribute("disabled", button.isDisabled(), "true");
 		xml.appendOptionalAttribute("hidden", button.isHidden(), "true");
 		xml.appendOptionalAttribute("tabIndex", button.hasTabIndex(), button.getTabIndex());
-		xml.appendOptionalAttribute("toolTip", button.getToolTip());
-		xml.appendOptionalAttribute("accessibleText", button.getAccessibleText());
+		xml.appendOptionalAttribute("toolTip", toolTip);
+		xml.appendOptionalAttribute("accessibleText", accessibleText);
 		xml.appendOptionalAttribute("popup", button.isPopupTrigger(), "true");
 		xml.appendOptionalAttribute("accessKey", Util.upperCase(button.getAccessKeyAsString()));
 		xml.appendOptionalAttribute("cancel", button.isCancel(), "true");
 		xml.appendOptionalAttribute("unsavedChanges", button.isUnsavedChanges(), "true");
 		xml.appendOptionalAttribute("msg", button.getMessage());
+		xml.appendOptionalAttribute("client", button.isClientCommandOnly(), "true");
 
 		if (imageUrl != null) {
 			xml.appendAttribute("imageUrl", imageUrl);
@@ -71,6 +75,14 @@ class WButtonRenderer extends AbstractWebXmlRenderer {
 						break;
 					default:
 						throw new SystemException("Unknown image position: " + imagePosition);
+				}
+			}
+
+			if (Util.empty(text) && Util.empty(button.getToolTip()) && Util.empty(button.getAccessibleText())) {
+				// If the button has an umageUrl but no text equivalent get the text equivalent off of the image
+				WImage imgHolder = button.getImageHolder();
+				if (null != imgHolder) {
+					xml.appendOptionalAttribute("toolTip", imgHolder.getAlternativeText());
 				}
 			}
 		}
@@ -107,17 +119,17 @@ class WButtonRenderer extends AbstractWebXmlRenderer {
 	 */
 	private void paintAjax(final WButton button, final XmlStringBuilder xml) {
 		// Start tag
-		xml.appendTagOpen("ui:ajaxTrigger");
+		xml.appendTagOpen("ui:ajaxtrigger");
 		xml.appendAttribute("triggerId", button.getId());
 		xml.appendClose();
 
 		// Target
-		xml.appendTagOpen("ui:ajaxTargetId");
+		xml.appendTagOpen("ui:ajaxtargetid");
 		xml.appendAttribute("targetId", button.getAjaxTarget().getId());
 		xml.appendEnd();
 
 		// End tag
-		xml.appendEndTag("ui:ajaxTrigger");
+		xml.appendEndTag("ui:ajaxtrigger");
 	}
 
 	/**

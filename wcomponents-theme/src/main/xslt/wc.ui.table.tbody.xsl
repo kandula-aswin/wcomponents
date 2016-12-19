@@ -1,33 +1,29 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+	xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" 
+	xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
-<!--
- If the table has single row selection then each selectable row is a radio and the tbody is the grouping element.
+	<xsl:import href="wc.common.n.className.xsl"/>
 
- parameters
-    maxIndent and addCols: see comments in transform of ui:table in wc.ui.table.xsl
--->
+	<!-- 
+		Transform of ui:tbody to tbody.
+
+		Structural: do not override.
+	-->
 	<xsl:template match="ui:tbody">
-		<xsl:param name="maxIndent" select="0"/>
-		<xsl:param name="addCols" select="0"/>
-		<xsl:element name="tbody">
-			<xsl:attribute name="id">
-				<xsl:value-of select="concat(../@id,'${wc.ui.table.id.body.suffix}')"/>
-			</xsl:attribute>
-			<xsl:if test="../@separators='both' or ../@separators='horizontal'">
-				<xsl:attribute name="class">
-					<xsl:text>wc_table_rowsep</xsl:text>
-				</xsl:attribute>
-			</xsl:if>
-			<xsl:if test="../ui:rowSelection[not(@multiple=$t)]">
-				<xsl:attribute name="role">
-					<xsl:text>radiogroup</xsl:text>
-				</xsl:attribute>
-			</xsl:if>
-			<xsl:apply-templates select="*">
-				<xsl:with-param name="myTable" select="parent::ui:table"/>
-				<xsl:with-param name="maxIndent" select="$maxIndent"/>
-				<xsl:with-param name="addCols" select="$addCols"/>
+		<tbody id="{concat(../@id,'_tb')}">
+			<xsl:call-template name="makeCommonClass">
+				<xsl:with-param name="additional">
+					<xsl:if test="../@type">
+						<xsl:value-of select="concat('wc_tbl_', ../@type)"/>
+					</xsl:if>
+					<xsl:if test="../@separators eq 'both' or ../@separators eq 'horizontal'">
+						<xsl:text> wc_table_rowsep</xsl:text>
+					</xsl:if>
+				</xsl:with-param>
+			</xsl:call-template>
+			<xsl:apply-templates select="ui:tr">
+				<xsl:with-param name="myTable" select=".."/>
 			</xsl:apply-templates>
-		</xsl:element>
+		</tbody>
 	</xsl:template>
 </xsl:stylesheet>

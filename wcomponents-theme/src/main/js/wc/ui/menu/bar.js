@@ -1,23 +1,20 @@
-/**
- * Menu controller extension for WMenu of type BAR and type FLYOUT. These are menus which are horizontal at the top
- * level and if they have submenus they are transient fly-out artifacts.
- *
- * @see {@link http://www.w3.org/TR/wai-aria-practices/#menu}
- *
- * @module
- * @extends module:wc/ui/menu/core
- *
- * @requires module:wc/ui/menu/core
- * @requires module:wc/dom/keyWalker
- * @requires module:wc/dom/shed
- * @requires module:wc/dom/Widget
- * @requires module:wc/dom/initialise
- * @requires module:wc/dom/uid
- * @requires module:wc/ui/menu/menuItem
- */
-define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "wc/dom/initialise", "wc/dom/uid", "wc/ui/menu/menuItem"],
-	/** @param abstractMenu wc/ui/menu/core @param keyWalker wc/dom/keyWalker @param shed wc/dom/shed @param Widget wc/dom/Widget @param initialise wc/dom/initialise @param uid wc/dom/uid @ignore */
-	function(abstractMenu, keyWalker, shed, Widget, initialise, uid) {
+define(["wc/ui/menu/core",
+	"wc/array/toArray",
+	"wc/dom/event" ,
+	"wc/dom/keyWalker",
+	"wc/dom/shed",
+	"wc/dom/Widget",
+	"wc/dom/initialise",
+	"wc/dom/uid",
+	"wc/i18n/i18n",
+	"wc/dom/classList",
+	"wc/timers",
+	"wc/ui/ajax/processResponse",
+	"wc/loader/resource",
+	"lib/handlebars/handlebars",
+	"wc/ui/viewportUtils",
+	"wc/ui/menu/menuItem"],
+	function(abstractMenu, toArray, event, keyWalker, shed, Widget, initialise, uid, i18n, classList, timers, processResponse, loader, handlebars, viewportUtils) {
 		"use strict";
 
 		/* Unused dependencies:
@@ -32,7 +29,15 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 		 * @private
 		 */
 		function Menubar() {
-			var BANNER;
+			var BANNER = BANNER || new Widget("header", "", {role: "banner"}),
+				HAMBURGER,
+				MENU_FIXED = "wc_menu_fix",
+				resizeTimer,
+				BURGER_MENU_CLASS = "wc_menu_hbgr",
+				submenuTemplate,
+				closeButtonTemplate,
+				DECORATED_LABEL,
+				RESPONSIVE_MENU;
 
 			/**
 			 * The descriptors for this menu type.
@@ -73,21 +78,51 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 			 * @returns {Boolean} true if first/last item.
 			 */
 			function isFirstLastItem(element, root, isLast) {
-				var result = false,
-					target,
+				var target,
 					direction = isLast ? keyWalker.MOVE_TO.NEXT : keyWalker.MOVE_TO.PREVIOUS;
 
 				/* get the element which would be focussed if we were to use findFn without
 				 * allowing cycling and forcing depthFirstNavigation false. If we don't get anything then
 				 * the element passed in is the first/last*/
 				if ((target = instance._getTargetItem(element, direction, root, false))) {
-					result = element === target;  // if the target is the same as target then element is first &/or last
+					return element === target;  // if the target is the same as target then element is first &/or last
 				}
-				else {
-					result = true;  // there are no other elements so it MUST be the first & last!
-				}
-				return result;
+				return true;
 			}
+
+//
+//			function openTopLevelSibling(element, next) {
+//				var branch = element,
+//					result, target;
+//
+//				if (instance._isBranch(branch)) {
+//					result =  branch;
+//					branch = branch.parentNode;
+//				}
+//
+//				while (branch) {
+//					if ((branch = instance._getBranch(branch))) {
+//						result =  branch;
+//						branch = branch.parentNode;
+//					}
+//				}
+//
+//				if (result) {
+//					target = instance._getTargetItem(result, (next ? keyWalker.MOVE_TO.PREVIOUS : keyWalker.MOVE_TO.NEXT), instance.getRoot(result), true);
+//				}
+//
+//				if(target) {
+//					instance[instance._FUNC_MAP.ACTION](target);
+//				}
+//			}
+//
+//			this.openPreviousTopLevelSibling = function(element) {
+//				openTopLevelSibling(element);
+//			};
+//
+//			this.openNextTopLevelSibling = function (element) {
+//				openTopLevelSibling(element, true);
+//			};
 
 			/**
 			 * Reset the key map according to the currently focused item. In the top level the  left and right go to
@@ -98,24 +133,40 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 			 * @protected
 			 * @override
 			 * @param {Element} item The item which has focus.
-			 * @param {Element} root The root element of the current menu.
 			 */
-			this._remapKeys = function(item, root) {
-				var submenu = this._getSubMenu(item),
+			this._remapKeys = function(item) {
+				var submenu,
+					_item = item,
 					VK_UP = "DOM_VK_UP",
 					VK_DOWN = "DOM_VK_DOWN",
 					VK_RIGHT = "DOM_VK_RIGHT",
-					VK_LEFT = "DOM_VK_LEFT";
+					VK_LEFT = "DOM_VK_LEFT",
+					branch, grandparent,
+					root = this.getRoot(_item);
 
-				if (submenu) {
-					/* If a submenu left closes the current branch and right will
-					 * trigger the action if the item is a branch or opener but
-					 * otherwise do nothing. */
-					this._keyMap[VK_LEFT] = this._FUNC_MAP.CLOSE_MY_BRANCH;
-					if (this._isBranchOrOpener(item)) {
+				if (!root) {
+					return;
+				}
+				if ((submenu = this.getSubMenu(_item))) {
+					if ((branch = this._getBranch(submenu)) && (grandparent = this.getSubMenu(branch))) {
+						// more than one level deep.
+						/* If a submenu left closes the current branch and right will
+						 * trigger the action if the item is a branch or opener but
+						 * otherwise do nothing. */
+						this._keyMap[VK_LEFT] = this._FUNC_MAP.CLOSE_MY_BRANCH;
+						this._keyMap[VK_UP] = keyWalker.MOVE_TO.PREVIOUS;
+						this._keyMap[VK_DOWN] = keyWalker.MOVE_TO.NEXT;
+					}
+					else {
+						// this._keyMap[VK_LEFT] = "openPreviousTopLevelSibling";
+						this._keyMap[VK_LEFT] = null;
+					}
+
+					if (this._isBranchOrOpener(_item)) {
 						this._keyMap[VK_RIGHT] = this._FUNC_MAP.ACTION;
 					}
 					else {
+						// this._keyMap[VK_RIGHT] = "openNextTopLevelSibling";
 						this._keyMap[VK_RIGHT] = null;
 					}
 					/* Up and down is  a bit more convoluted.
@@ -123,18 +174,13 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 					 * menu. We can do this by getting the current branch and then
 					 * testing if *it* has an ancestor branch, if it does we are nested.
 					 */
-					if ((this._getSubMenu(submenu.parentNode))) {
-						// we are nested submenu in submenu so mapping is simple
-						this._keyMap[VK_UP] = keyWalker.MOVE_TO.PREVIOUS;
-						this._keyMap[VK_DOWN] = keyWalker.MOVE_TO.NEXT;
-					}
-					else {
+					if (!grandparent) {
 						// we are in a submenu under MENU
-						if (this._isBranchOrOpener(item)) {
-							item = this._getBranch(item);
+						if (this._isBranchOrOpener(_item)) {
+							_item = this._getBranch(_item);
 						}
-						if (item) {
-							if (isFirstLastItem(item, root)) {
+						if (_item) {
+							if (isFirstLastItem(_item, root)) {
 								// If I am the first submenu item UP should go to the opener
 								this._keyMap[VK_UP] = keyWalker.MOVE_TO.PARENT;
 							}
@@ -142,7 +188,7 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 								this._keyMap[VK_UP] = keyWalker.MOVE_TO.PREVIOUS;
 							}
 							// this is no an else if because an item can be both first and last
-							if (isFirstLastItem(item, root, true)) {
+							if (isFirstLastItem(_item, root, true)) {
 								// If I am the last submenu item then DOWN should go to the opener
 								this._keyMap[VK_DOWN] = keyWalker.MOVE_TO.PARENT;
 							}
@@ -156,12 +202,12 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 					this._keyMap[VK_LEFT] = keyWalker.MOVE_TO.PREVIOUS;
 					this._keyMap[VK_RIGHT] = keyWalker.MOVE_TO.NEXT;
 					// if I am a branch/opener and the menu is open then I have to cycle through my children
-					if (this._isOpener(item)) {
-						item = this._getBranch(item);
+					if (this._isOpener(_item)) {
+						_item = this._getBranch(_item);
 					}
-					if (this._isBranch(item)) {
-						if (shed.isExpanded(item)) {
-							this._keyMap[VK_UP] = keyWalker.MOVE_TO.LAST_CHILD;  // "lastChildItem";
+					if (this._isBranch(_item) && (_item = this._getBranchExpandableElement(_item))) {
+						if (shed.isExpanded(_item)) {
+							this._keyMap[VK_UP] = keyWalker.MOVE_TO.LAST_CHILD; // "lastChildItem";
 							this._keyMap[VK_DOWN] = keyWalker.MOVE_TO.CHILD;
 						}
 						else {
@@ -192,98 +238,202 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 				};
 			};
 
+			function removeIconified(nextMenu) {
+				var burger,
+					submenuContent,
+					current;
+				if (!classList.contains(nextMenu, MENU_FIXED)) {
+					return;
+				}
+
+				try {
+					HAMBURGER = HAMBURGER || new Widget("div", BURGER_MENU_CLASS);
+					if (!(burger = HAMBURGER.findDescendant(nextMenu))) {
+						return;
+					}
+
+					submenuContent = instance._wd.submenu.findDescendant(burger);
+					if (!submenuContent) {
+						return;
+					}
+					while ((current = submenuContent.firstChild)) {
+						if (classList.contains(current, "wc_closesubmenu")) {
+							submenuContent.removeChild(current);
+						}
+						else {
+							nextMenu.appendChild(current);
+						}
+					}
+					burger.parentNode.removeChild(burger);
+
+				}
+				finally {
+					classList.remove(nextMenu, MENU_FIXED);
+				}
+			}
+
+			function attachSubMenuCloseButton(el) {
+				var branch,
+					opener,
+					label,
+					props = {},
+					closeButton;
+				if (el && instance.isSubMenu(el)) {
+					closeButtonTemplate = closeButtonTemplate || getTemplate("submenuCloseButton.mustache");
+					if ((branch = instance._getBranch(el)) && (opener = instance._getBranchOpener(branch))) {
+						DECORATED_LABEL = DECORATED_LABEL || new Widget("", "wc-decoratedlabel");
+						label = DECORATED_LABEL.findDescendant(opener);
+
+						if (label) {
+							Array.prototype.forEach.call(label.childNodes, function(child) {
+								if (child.nodeType !== Node.ELEMENT_NODE) {
+									return;
+								}
+								if (classList.contains(child, "wc-labelhead")) {
+									props.labelhead = child.innerHTML;
+								}
+								else if (classList.contains(child, "wc-labeltail")) {
+									props.labeltail = child.innerHTML;
+								}
+								else {
+									props.content = child.innerHTML;
+								}
+							});
+						}
+					}
+					if (!props.content) {
+						props.content = i18n.get("menu_close_label");
+					}
+					el.insertAdjacentHTML("afterBegin", closeButtonTemplate(props));
+					closeButton = el.firstChild;
+					if (!closeButton.id) {
+						closeButton.id = uid();
+					}
+				}
+			}
+
+			function getTemplate(name) {
+				var template = loader.load(name, true);
+				return handlebars.compile(template);
+			}
+
 			/**
-			 * Array iterator function for {@link module:wc/ui/menu/bar~updateMenusForMobile} which processes each
+			 * Array iterator function for {@link module:wc/ui/menu/bar~toggleIconMenus} which processes each
 			 * menu found and manipulates it for improved display and usability on mobile devices. Each sub-menu has a
 			 * close button added to the top and when the BAR menu is in the HEADER panel (role "banner") we collapse
 			 * the entire menu into a sub-menu and add a launcher to where the top-level items used to be.
 			 *
 			 * @function
 			 * @private
-			 * @param {Element} nextMenu The menu or sub-menu to be processed.
+			 * @param {Element} nextMenu The menu to be processed.
 			 */
-			function processMenu(nextMenu) {
+			function makeIconified(nextMenu) {
 				var branchElement,
-					button,
-					submenuContentElement,
-					contentId,
-					menuItem,
-					MENU_FIXED = "data-wc-menufixed",
-					ROLE = "role",
-					childCount;
-				if (nextMenu.hasAttribute(MENU_FIXED)) {
+					props;
+
+				if (classList.contains(nextMenu, MENU_FIXED)) {
 					return;
 				}
 
-				nextMenu.setAttribute(MENU_FIXED, "true");
-				BANNER = BANNER || new Widget("header", "", {role: "banner"});
-				// only do this if the menu contains more than one child
-				childCount = typeof nextMenu.children !== "undefined" ? nextMenu.children.length : (typeof nextMenu.childNodes !== "undefined" ? nextMenu.childNodes.length : 0);
+				props = {
+					id: uid(),
+					class: " " + BURGER_MENU_CLASS,
+					opener: {
+						class: " wc_hbgr wc-icon",
+						tooltip: i18n.get("menu_open_label")
+					},
+					contentId: uid(),
+					open: false,
+					closeText: i18n.get("menu_close_label"),
+					items: nextMenu.innerHTML
+				};
+				submenuTemplate = submenuTemplate || getTemplate("submenu.mustache");
+				branchElement = submenuTemplate(props);
+				nextMenu.innerHTML = branchElement;
+				classList.add(nextMenu, MENU_FIXED);
+			}
 
-				if (childCount > 1 && BANNER.findAncestor(nextMenu)) {
-					branchElement = document.createElement("div");
-					branchElement.setAttribute(ROLE, "menuitem");
-					branchElement.className = "submenu";
-					branchElement.setAttribute("aria-expanded", "false");
-					button = document.createElement("button");
-					button.type = "button";
-					button.setAttribute("aria-haspopup", "true");
-					button.title = "open";
-					contentId = uid();
-					button.setAttribute("aria-controls", contentId);
-					button.className = "wc_btn_nada";
-					branchElement.appendChild(button);
-
-					submenuContentElement = document.createElement("div");
-					submenuContentElement.className = "submenucontent";
-					submenuContentElement.id = contentId;
-					submenuContentElement.setAttribute(ROLE, "menu");
-					branchElement.appendChild(submenuContentElement);
-
-					while ((menuItem = nextMenu.firstChild)) {
-						submenuContentElement.appendChild(menuItem);
-					}
-					nextMenu.appendChild(branchElement);
+			function resizeEvent(/* $event */) {
+				if (resizeTimer) {
+					timers.clearTimeout(resizeTimer);
 				}
-				else {
-					branchElement = nextMenu;
-				}
-
-				Array.prototype.forEach.call(instance._wd.submenu.findDescendants(branchElement), instance.fixSubMenuContent);
+				resizeTimer = timers.setTimeout(toggleIconMenus, 100);
 			}
 
 			/**
-			 * When a mobile device is used add a close button to the top of every submenu content as the submenus are
-			 * shown near full screen and there is (usually) no ESCAPE key.
+			 * Determine if the iconification of any menus has to be toggled.
 			 *
 			 * @function
-			 * @protected
-			 * @override
-			 * @param {Element} element The element which may be a menu, submenu or something containing a menu.
+			 * @private
+			 * @param {Element} el The element which may be a menu, submenu or something containing a menu.
 			 */
-			this.updateMenusForMobile = function (element) {
-				var candidates = [];
-				if (!this.isMobile) {
+			function toggleIconMenus(el) {
+				var candidates, element = el || document.body;
+				if (instance.isSubMenu(element)) {
 					return;
 				}
-				if (this._wd.submenu.isOneOfMe(element)) {
-					if (this.ROOT.findAncestor(element)) {
-						this.fixSubMenuContent(element);
-					}
-					return;
-				}
-				else if (this.ROOT.isOneOfMe(element)) {
+				RESPONSIVE_MENU = RESPONSIVE_MENU || instance.ROOT.extend(["wc-respond"]);
+
+				if (RESPONSIVE_MENU.isOneOfMe(element)) {
 					candidates = [element];
 				}
 				else {
-					candidates = this.ROOT.findDescendants(element);
+					candidates = toArray(RESPONSIVE_MENU.findDescendants(element));
 				}
 
-				Array.prototype.forEach.call(candidates, processMenu);
+				if (!candidates.length) {
+					return;
+				}
+
+				candidates = candidates.filter(function(next) {
+					return next.childNodes.length > 1;
+				});
+
+				if (candidates.length) {
+					if (viewportUtils.isPhoneLike()) {
+						candidates.forEach(makeIconified);
+					}
+					else {
+						candidates.forEach(removeIconified);
+					}
+				}
+			};
+
+			this.initialise = function(element) {
+				this.constructor.prototype.initialise.call(this, element);
+				toggleIconMenus(element);
+				processResponse.subscribe(attachSubMenuCloseButton, true);
+				processResponse.subscribe(toggleIconMenus, true);
+				event.add(window, event.TYPE.resize, resizeEvent, 1);
 			};
 		}
 
-		var /** @alias module:wc/ui/menu/bar */ instance;
+		/**
+		 * Menu controller extension for WMenu of type BAR and type FLYOUT. These are menus which are horizontal at the top
+		 * level and if they have submenus they are transient fly-out artifacts.
+		 *
+		 * @see {@link http://www.w3.org/TR/wai-aria-practices/#menu}
+		 *
+		 * @module
+		 * @extends module:wc/ui/menu/core
+		 *
+		 * @requires module:wc/ui/menu/core
+		 * @requires module:wc/array/toArray
+		 * @requires module:wc/dom/event
+		 * @requires module:wc/dom/keyWalker
+		 * @requires module:wc/dom/shed
+		 * @requires module:wc/dom/Widget
+		 * @requires module:wc/dom/initialise
+		 * @requires module:wc/dom/uid
+		 * @requires module:wc/i18n/i18n
+		 * @requires module:wc/dom/classList
+		 * @requires module:wc/timers
+		 * @requires module:wc/ui/ajax/processResponse
+		 * @requires module:wc/loader/resource
+		 * @requires:module:lib/handlebars/handlebars
+		 * @requires module:wc/ui/viewportUtils
+		 */
+		var instance;
 		Menubar.prototype = abstractMenu;
 		instance = new Menubar();
 		instance.constructor = Menubar;

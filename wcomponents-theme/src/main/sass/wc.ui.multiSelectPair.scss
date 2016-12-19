@@ -1,7 +1,7 @@
 /* wc.ui.multiSelectPair.scss */
-@import 'mixins_common.scss';
+@import 'mixins-common';
 
-.multiSelectPair {
+.wc-multiselectpair {
 	white-space: nowrap;
 
 	> span {// The containers for the parts of the multiSelectPair
@@ -15,6 +15,10 @@
 			//compound control.
 			margin-left: 1px;
 		}
+
+		&.wc-fieldindicator {
+			display: block;
+		}
 	}
 
 	label { //Making the label display:block will define a minimum size for the selects.
@@ -26,25 +30,13 @@
 		min-width: 100%;
 	}
 
-	// Attempt to align the sort buttons with the top of the SELECTs by using the default line height. This could be
-	// done by adding a non-breaking-space in a simple span to the button block but that would involve an extra dom node
-	// and  having sightly different transform for the list order buttons of WShuffler and WMultiSelectPair. This
-	// padding hack works for all usual cases.
-	.wc_sortcont,
-	.wc_msp_btncol {
-		padding-top: $line-size;
-
-		button {
-			@include button;
-		}
-	}
-
 	.wc_msp_btncol button { // the add and remove buttons
 		display: block;
 
 		&[value='rem'] { //a small gap between the add and remove buttons
-			margin-top: $vgap-normal;
+			margin-top: $wc-gap-normal;
 		}
 	}
 }
-/* end wc.ui.multiSelectPair.scss */
+
+@import 'wc.ui.multiSelectPairIcons';

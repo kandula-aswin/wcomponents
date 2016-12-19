@@ -3,7 +3,7 @@
 	targetNamespace="https://github.com/bordertech/wcomponents/namespace/ui/v1.0"
 	xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0">
 	<xs:include schemaLocation="attributeGroups.control.xsd"/>
-	<xs:element name="textArea">
+	<xs:element name="textarea">
 		<xs:annotation>
 			<xs:documentation>
 				<p>WTextArea represents an input for multi-line text.</p>
@@ -33,6 +33,8 @@
 				<xs:element name="rtf" type="xs:string" minOccurs="0" maxOccurs="1"/>
 			</xs:sequence>
 			<xs:attributeGroup ref="ui:submitting.input.attributes"/>
+			<xs:attributeGroup ref="ui:placeholder.attributes"/>
+			<xs:attributeGroup ref="ui:autocomplete.attributes"/>
 			<xs:attribute name="minLength" type="xs:positiveInteger">
 				<xs:annotation>
 					<xs:documentation>Indicates the minimum number of characters which represents valid input <em>if any content is entered at all</em>.</xs:documentation>

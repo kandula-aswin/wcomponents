@@ -1,8 +1,8 @@
 package com.github.bordertech.wcomponents;
 
 /**
- * This abstract class extends AbstractContainer and implements the MutableContainer interface to expose methods for
- * modifying the contents of a container. This class is extended by other container classes which allow arbitrary
+ * This abstract class extends AbstractContainer and implements the {@link MutableContainer} interface to expose methods
+ * for modifying the contents of a container. This class is extended by other container classes which allow arbitrary
  * content.
  *
  * @author Yiannis Paschalidis
@@ -27,7 +27,9 @@ public abstract class AbstractMutableContainer extends AbstractNamingContextCont
 	 *
 	 * @param component the component to add.
 	 * @param tag the tag used to identify the component.
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	@Override
 	public void add(final WComponent component, final String tag) {
 		super.add(component, tag);

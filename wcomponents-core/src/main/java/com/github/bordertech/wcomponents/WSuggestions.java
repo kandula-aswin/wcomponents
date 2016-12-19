@@ -1,6 +1,6 @@
 package com.github.bordertech.wcomponents;
 
-import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.Factory;
 import com.github.bordertech.wcomponents.util.LookupTable;
 import java.util.ArrayList;
@@ -31,18 +31,34 @@ import java.util.List;
  * @author Jonathan Austin
  * @since 1.0.0
  */
-public class WSuggestions extends AbstractWComponent implements AjaxTarget {
+public class WSuggestions extends AbstractWComponent implements AjaxInternalTrigger, AjaxTarget {
 
 	/**
 	 * The Application-wide lookup-table to use.
 	 */
-	private static final LookupTable APPLICATION_LOOKUP_TABLE = Factory.newInstance(
-			LookupTable.class);
+	private static final LookupTable APPLICATION_LOOKUP_TABLE = Factory.newInstance(LookupTable.class);
 
 	/**
 	 * AJAX refresh command.
 	 */
 	public static final String AJAX_REFRESH_ACTION_COMMAND = "Refresh";
+
+	/**
+	 * The way in which the suggestion is provided to and selected by the user. Defaults to BOTH and should remain as
+	 * this for combobox implementations. LIST should be used for implementations which enforce selection of an existing
+	 * value. We may want to consider INLINE in the future but I see no reason for NONE since then it would not be a
+	 * combo.
+	 */
+	public enum Autocomplete {
+		/**
+		 * Indicates that autocomplete may be from the textbox or from the suggestion list.
+		 */
+		BOTH,
+		/**
+		 * Indicates the autocomplete must only be from the suggestion list.
+		 */
+		LIST
+	};
 
 	/**
 	 * Create a WSuggestions.
@@ -103,19 +119,6 @@ public class WSuggestions extends AbstractWComponent implements AjaxTarget {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	protected void preparePaintComponent(final Request request) {
-		UIContext uic = UIContextHolder.getCurrent();
-
-		// Register for AJAX if not using a cached list and have a refresh action.
-		if (uic.getUI() != null && getListCacheKey() == null && getRefreshAction() != null) {
-			AjaxHelper.registerComponentTargetItself(getId(), request);
-		}
-	}
-
-	/**
 	 * Returns the complete list of suggestions available for selection for this user's session.
 	 *
 	 * @return the list of suggestions available for the given user's session.
@@ -153,8 +156,7 @@ public class WSuggestions extends AbstractWComponent implements AjaxTarget {
 	public String getListCacheKey() {
 		Object table = getLookupTable();
 
-		if (table != null && Config.getInstance().getBoolean(
-				AbstractWSelectList.DATALIST_CACHING_PARAM_KEY, false)) {
+		if (table != null && ConfigurationProperties.getDatalistCaching()) {
 			String key = APPLICATION_LOOKUP_TABLE.getCacheKeyForTable(table);
 			return key;
 		}
@@ -216,6 +218,20 @@ public class WSuggestions extends AbstractWComponent implements AjaxTarget {
 	 */
 	public String getAjaxFilter() {
 		return getComponentModel().filter;
+	}
+
+	/**
+	 * @param autocomplete The Autocomplete to set for this instance.
+	 */
+	public void setAutocomplete(final Autocomplete autocomplete) {
+		getOrCreateComponentModel().autocomplete = autocomplete;
+	}
+
+	/**
+	 * @return The autocomplete for this instance.
+	 */
+	public Autocomplete getAutocomplete() {
+		return getComponentModel().autocomplete;
 	}
 
 	/**
@@ -301,6 +317,11 @@ public class WSuggestions extends AbstractWComponent implements AjaxTarget {
 		 * Filter value passed on the AJAX request.
 		 */
 		private String filter;
+
+		/**
+		 * The autocomplete model for the suggestions.
+		 */
+		private Autocomplete autocomplete = Autocomplete.BOTH;
 
 		/**
 		 * @return returns the suggestions.

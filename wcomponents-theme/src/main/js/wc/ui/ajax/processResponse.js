@@ -1,20 +1,9 @@
-/**
- * This part of ajaxRegion is responsible for processing the AJAX response and updating the page accordingly.
- * @module
- * @requires module:wc/Observer
- * @requires module:wc/xml/xpath
- * @requires module:wc/dom/tag
- * @requires module:wc/xml/xslTransform
- * @requires module:wc/dom/Widget
- *
- * @todo re-order code, document private memebers.
- */
 define(["wc/Observer",
 		"wc/dom/tag",
-		"wc/xml/xslTransform",
-		"wc/dom/Widget"],
-	/** @param Observer wc/Observer @param tag wc/dom/tag @param xslTransform wc/xml/xslTransform @param Widget wc/dom/Widget @ignore */
-	function(Observer, tag, xslTransform, Widget) {
+		"wc/dom/toDocFragment",
+		"wc/dom/Widget",
+		"wc/template"],
+	function(Observer, tag, toDocFragment, Widget, template) {
 		"use strict";
 		/**
 		 * @constructor
@@ -32,7 +21,7 @@ define(["wc/Observer",
 			 * @property {String} REPLACE Indicates the action will replace the target.
 			 * @property {String} APPEND Indicates the action will append its payload to the content of the target.
 			 */
-			this.actions = { FILL: "replaceContent", REPLACE: "replace", APPEND: "append" };
+			this.actions = { FILL: "replaceContent", REPLACE: "replace", APPEND: "append", IN: "in" };
 
 			/**
 			 * Subscribers can chose to be notified before the DOM is updated with new content
@@ -47,7 +36,7 @@ define(["wc/Observer",
 				var group = null;
 				observer = observer || new Observer();
 				if (after) {
-					group = {group: OBSERVER_GROUP};
+					group = { group: OBSERVER_GROUP };
 				}
 				return observer.subscribe(subscriber, group);
 			};
@@ -85,28 +74,24 @@ define(["wc/Observer",
 			 * @param {module:wc/ajax/Trigger} trigger The trigger which triggered the ajax request.
 			 */
 			this.processResponseXml = function(response, trigger) {
-				var content, doc;
+				var promise;
 				if (response) {
-					if (typeof response === "string") {
-						doc = xslTransform.htmlToDocumentFragment(response);
-						processResponseHtml(doc, trigger);
-					}
-					else {
-						doc = response.documentElement;
-						if (doc) {
-							content = getPayload(doc);
-							content.then(function(df) {
-								processResponseHtml(df, trigger);
-							}, logError);
+					promise = new Promise(function(resolve, reject) {
+						var doc;
+						if (typeof response === "string") {
+							doc = toDocFragment(response);
+							processResponseHtml(doc, trigger);
+							resolve();
 						}
 						else {
-							console.warn("Response XML does not appear well formed");
+							reject("Unknown response type");
 						}
-					}
+					});
 				}
 				else {
-					console.warn("Response XML is empty");
+					promise = Promise.reject("Response is empty");
 				}
+				return promise;
 			};
 
 			function processResponseHtml(documentFragment, trigger) {
@@ -128,12 +113,13 @@ define(["wc/Observer",
 								targetId = next.getAttribute("data-id");
 								element = document.getElementById(targetId);
 								if (element) {
-									/* Since the ui:ajaxResponse is essentially thrown away we need to move any of its interesting attributes to the target element.
+									/* Since the ui:ajaxresponse is essentially thrown away we need to move any of its interesting attributes to the target element.
 									 * In reality this is to catch the onLoadFocusId attribute but we'll try to pretend it's generic. */
 									mergeAttributes(doc, next);
 									action = next.getAttribute("data-action");
 									content = document.createDocumentFragment();
 									while (next.firstChild) {
+										template.process({ source: next.firstChild });
 										content.appendChild(next.firstChild);
 									}
 									insertPayloadIntoDom(element, content, action, trigger, false);
@@ -176,10 +162,6 @@ define(["wc/Observer",
 				}
 			};
 
-			function logError(msg) {
-				console.warn(msg);
-			}
-
 			/*
 			 * Copy attributes from one element to another, ignoring xmlns:* attributes.
 			 * @param {Element} source The element which has the attributes we want to copy from.
@@ -196,27 +178,10 @@ define(["wc/Observer",
 				}
 			}
 
-			/**
-			 *
-			 * @param {Element} target An XML Element
-			 * @returns {Promise} resolved with a documentFragment
-			 */
-			function getPayload(target) {
-				var result;
-				if (target.childNodes.length) {
-					result = xslTransform.transform({ xmlDoc: target });
-				}
-				else {
-					result = Promise.resolve(document.createDocumentFragment());
-				}
-				return result;
-			}
-
 			function insertPayloadIntoDom(element, content, action, trigger, doNotPublish) {
 				var actionMethod, _element, triggerId = (trigger && trigger.id) ? trigger.id : null;
 				switch (action) {
 					case instance.actions.REPLACE:
-						/*eslint-disable */  // remove when this bug is fixed https://github.com/eslint/eslint/issues/2248
 						if (element.tagName !== tag.BODY) {
 							actionMethod = replaceElement;
 						}
@@ -224,12 +189,14 @@ define(["wc/Observer",
 							console.warn("Refuse to replace BODY element, use action", instance.actions.FILL);
 						}
 						break;
-						/*eslint-enable */
 					case instance.actions.FILL:
 						actionMethod = replaceElementContent;
 						break;
 					case instance.actions.APPEND:
 						actionMethod = appendElementContent;
+						break;
+					case instance.actions.IN:
+						actionMethod=replaceIn;
 						break;
 					default:
 						console.warn("Unknown action", action);
@@ -322,6 +289,45 @@ define(["wc/Observer",
 					result = null;
 				}
 				insertScripts(scripts, parent);
+				return result;
+			}
+
+			/**
+			 * Replace specified elements within a given element in the originating document with the contents of the
+			 * ajax response. If the elements which are immediate children of content are not in the originating
+			 * document's version of element then they are appended to element.
+			 *
+			 * @function
+			 * @private
+			 * @param {Element} element The containing element in the original document.
+			 * @param {DocumentFragment} content The document fragment containing the replacement(s).
+			 * @returns {?Element}
+			 */
+			function replaceIn(element, content) {
+				var child,
+					_element,
+					id,
+					result,
+					wrapper = document.createElement("div");
+
+				while ((child = content.firstChild)) {
+					wrapper.appendChild(child);
+					if ((id = child.id)) {
+						if ((_element = document.getElementById(id))) {
+							result = replaceElement(_element, wrapper);
+						}
+						else {
+							result = appendElementContent(element, wrapper);
+						}
+					}
+					else {
+						result = appendElementContent(element, wrapper);
+					}
+
+					if (wrapper.firstChild) { // should have been removed.
+						wrapper.removeChild(wrapper.firstChild);
+					}
+				}
 				return result;
 			}
 
@@ -446,9 +452,20 @@ define(["wc/Observer",
 
 				return result;
 			}
-
 		}
 
-		var /** @alias module:wc/ui/ajax/processResponse */ instance = new AjaxProcessor();  // note to self: leave this here!
+		/**
+		 * This part of ajaxRegion is responsible for processing the AJAX response and updating the page accordingly.
+		 * @module
+		 * @requires module:wc/Observer
+		 * @requires module:wc/xml/xpath
+		 * @requires module:wc/dom/tag
+		 * @requires module:wc/dom/toDocFragment
+		 * @requires module:wc/dom/Widget
+		 * @requires module:wc/template
+		 *
+		 * @todo re-order code, document private memebers.
+		 */
+		var instance = new AjaxProcessor();  // note to self: leave this here!
 		return instance;
 	});

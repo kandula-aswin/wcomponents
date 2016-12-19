@@ -1,23 +1,19 @@
 /* wc.ui.menu.tree.scss */
-@import 'wc.ui.menu_vars.scss';
+@import 'mixins-common';
 
-[role='tree'] [role='treeitem'],
-[role='treeitem'][aria-expanded] > button {
-	padding: $wc-ui-menu-tree-item-pad;
-}
-
-[role='treeitem'] {
-	[role] {
-		display: table;
+// TODO: try to work WMenu Type TREE to be more like WTree so we can get rid of this.
+.wc-menu-type-tree {
+	.wc-menuitem {
+		padding: $wc-tree-item-pad;
 	}
 
-	> [role='group'] {
-		display: block;
-		padding: 0 0 0 $wc-ui-menu-tree-indent;
+	.wc-submenu-o {
+		padding: $wc-tree-item-pad;
 	}
 
-	&.submenu:hover {
-		background-color: inherit;
+	.wc_submenucontent {
+		margin-left: $wc-tree-indent;
 	}
 }
-/* end wc.ui.menu.tree.scss */
+
+@import 'wc.ui.menu.treeIcons';

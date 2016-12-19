@@ -51,13 +51,11 @@ define(["wc/has", "wc/dom/cookie"],
 							cookie.create(key, value);
 						}
 					}
+					else if (hasLocalStorage) {
+						window.localStorage[key] = value;
+					}
 					else {
-						if (hasLocalStorage) {
-							window.localStorage[key] = value;
-						}
-						else {
-							cookie.create(key, value, 365);
-						}
+						cookie.create(key, value, 365);
 					}
 				}
 			};
@@ -81,13 +79,11 @@ define(["wc/has", "wc/dom/cookie"],
 							result = cookie.read(key);
 						}
 					}
+					else if (hasLocalStorage) {
+						result = window.localStorage[key];
+					}
 					else {
-						if (hasLocalStorage) {
-							result = window.localStorage[key];
-						}
-						else {
-							result = cookie.read(key);
-						}
+						result = cookie.read(key);
 					}
 				}
 				return result;
@@ -135,21 +131,19 @@ define(["wc/has", "wc/dom/cookie"],
 							cookie.erase(key);
 						}
 					}
+					else if (hasLocalStorage) {
+						try {
+							delete window.localStorage[key];
+						}
+						catch (ex) {
+							// IE8
+							if (typeof window.localStorage[key] !== "undefined") {
+								window.localStorage[key] = "";
+							}
+						}
+					}
 					else {
-						if (hasLocalStorage) {
-							try {
-								delete window.localStorage[key];
-							}
-							catch (ex) {
-								// IE8
-								if (typeof window.localStorage[key] !== "undefined") {
-									window.localStorage[key] = "";
-								}
-							}
-						}
-						else {
-							cookie.erase(key);
-						}
+						cookie.erase(key);
 					}
 				}
 			};

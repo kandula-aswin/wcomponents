@@ -10,6 +10,7 @@ import com.github.bordertech.wcomponents.servlet.WebXmlRenderContext;
  *
  * @author Yiannis Paschalidis
  * @author Jonathan Austin
+ * @author Mark Reeves
  * @since 1.0.0
  */
 final class WMessageBoxRenderer extends AbstractWebXmlRenderer {
@@ -26,7 +27,7 @@ final class WMessageBoxRenderer extends AbstractWebXmlRenderer {
 		XmlStringBuilder xml = renderContext.getWriter();
 
 		if (messageBox.hasMessages()) {
-			xml.appendTagOpen("ui:messageBox");
+			xml.appendTagOpen("ui:messagebox");
 			xml.appendAttribute("id", component.getId());
 			xml.appendOptionalAttribute("class", component.getHtmlClass());
 			xml.appendOptionalAttribute("track", component.isTracking(), "true");
@@ -50,6 +51,8 @@ final class WMessageBoxRenderer extends AbstractWebXmlRenderer {
 					break;
 			}
 
+			xml.appendOptionalAttribute("title", messageBox.getTitleText());
+
 			xml.appendClose();
 
 			for (String message : messageBox.getMessages()) {
@@ -58,7 +61,7 @@ final class WMessageBoxRenderer extends AbstractWebXmlRenderer {
 				xml.appendEndTag("ui:message");
 			}
 
-			xml.appendEndTag("ui:messageBox");
+			xml.appendEndTag("ui:messagebox");
 		}
 	}
 }

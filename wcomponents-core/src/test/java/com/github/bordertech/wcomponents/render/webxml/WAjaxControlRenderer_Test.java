@@ -43,32 +43,41 @@ public class WAjaxControlRenderer_Test extends AbstractWebXmlRendererTestCase {
 
 		// No Targets
 		assertSchemaMatch(root);
-		assertXpathEvaluatesTo("0", "count(//ui:ajaxTrigger)", root);
+		assertXpathEvaluatesTo("0", "count(//ui:ajaxtrigger)", root);
 
 		// With Targets
 		control.addTargets(new AjaxTarget[]{target1, target2, target3});
 
 		setActiveContext(createUIContext());
 		assertSchemaMatch(root);
-		assertXpathEvaluatesTo(trigger.getId(), "//ui:ajaxTrigger/@triggerId", root);
-		assertXpathEvaluatesTo("", "//ui:ajaxTrigger/@allowedUses", root);
-		assertXpathEvaluatesTo("", "//ui:ajaxTrigger/@delay", root);
-		assertXpathEvaluatesTo("3", "count(//ui:ajaxTrigger/ui:ajaxTargetId)", root);
-		assertXpathEvaluatesTo(target1.getId(), "//ui:ajaxTrigger/ui:ajaxTargetId[1]/@targetId",
+		assertXpathEvaluatesTo(trigger.getId(), "//ui:ajaxtrigger/@triggerId", root);
+		assertXpathNotExists("//ui:ajaxtrigger/@loadOnce", root);
+		assertXpathNotExists("//ui:ajaxtrigger/@delay", root);
+		assertXpathEvaluatesTo("3", "count(//ui:ajaxtrigger/ui:ajaxtargetid)", root);
+		assertXpathEvaluatesTo(target1.getId(), "//ui:ajaxtrigger/ui:ajaxtargetid[1]/@targetId",
 				root);
-		assertXpathEvaluatesTo(target2.getId(), "//ui:ajaxTrigger/ui:ajaxTargetId[2]/@targetId",
+		assertXpathEvaluatesTo(target2.getId(), "//ui:ajaxtrigger/ui:ajaxtargetid[2]/@targetId",
 				root);
-		assertXpathEvaluatesTo(target3.getId(), "//ui:ajaxTrigger/ui:ajaxTargetId[3]/@targetId",
+		assertXpathEvaluatesTo(target3.getId(), "//ui:ajaxtrigger/ui:ajaxtargetid[3]/@targetId",
 				root);
 
+		control.setLoadOnce(true);
+		assertSchemaMatch(root);
+		assertXpathEvaluatesTo("true", "//ui:ajaxtrigger/@loadOnce", root);
+
+		// remove loadOnce then reset it using loadCount
+		control.setLoadOnce(false);
+		assertSchemaMatch(root);
+		assertXpathNotExists("//ui:ajaxtrigger/@loadOnce", root);
+
 		// With Targets and optional attributes
-		control.setLoadCount(6);
+		control.setLoadCount(6); // any number greateer than 0...
 		control.setDelay(1000);
 
 		assertSchemaMatch(root);
-		assertXpathEvaluatesTo(trigger.getId(), "//ui:ajaxTrigger/@triggerId", root);
-		assertXpathEvaluatesTo("6", "//ui:ajaxTrigger/@allowedUses", root);
-		assertXpathEvaluatesTo("1000", "//ui:ajaxTrigger/@delay", root);
-		assertXpathEvaluatesTo("3", "count(//ui:ajaxTrigger/ui:ajaxTargetId)", root);
+		assertXpathEvaluatesTo(trigger.getId(), "//ui:ajaxtrigger/@triggerId", root);
+		assertXpathEvaluatesTo("true", "//ui:ajaxtrigger/@loadOnce", root);
+		assertXpathEvaluatesTo("1000", "//ui:ajaxtrigger/@delay", root);
+		assertXpathEvaluatesTo("3", "count(//ui:ajaxtrigger/ui:ajaxtargetid)", root);
 	}
 }

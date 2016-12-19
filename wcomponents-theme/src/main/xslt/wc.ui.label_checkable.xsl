@@ -1,8 +1,8 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.ui.label.n.makeLabel.xsl"/>
 	<!--
 		A Label for a WRadioButton or WCheckBox. This template mode is called
-		from the transforms of ui:checkBox and ui:radioButton to ensure that the
+		from the transforms of ui:checkbox and ui:radiobutton to ensure that the
 		label immediately follows the checkbox/radiobutton as per WCAG requirements.
 		See wc.common.checkableInput.xsl.
 	-->

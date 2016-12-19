@@ -45,14 +45,14 @@
 	<div id="expandTests">
 		<button id="exp1" type="button" aria-expanded="false">Expand</button>
 		<button id="exp2" type="button" aria-expanded="true">Expand</button>
-		<${wc.dom.html5.element.details} id="details1">
-			<${wc.dom.html5.element.summary} id="details1a">More details</${wc.dom.html5.element.summary}>
+		<details id="details1">
+			<summary id="details1a">More details</summary>
 			<div id="details1content">Content</div>
-		</${wc.dom.html5.element.details}>
-		<${wc.dom.html5.element.details} id="details2" open="open">
-			<${wc.dom.html5.element.summary} id="details2a">More details</${wc.dom.html5.element.summary}>
+		</details>
+		<details id="details2" open="open">
+			<summary id="details2a">More details</summary>
 			<div id="details2content">Content</div>
-		</${wc.dom.html5.element.details}>
+		</details>
 	</div>
 	<div id="hideTests">
 		<button id="hide1" type="button">Hide</button>
@@ -61,25 +61,28 @@
 	<div id="mandatoryTests">
 		<input id="inp7" type="text"/>
 		<input id="inp8" type="text" required="required"/>
-		<fieldset role="radiogroup" class="radioButtonSelect" id="radioButtonGroup1" aria-required="true">
+		<fieldset role="radiogroup" class="radiobuttonselect" id="radioButtonGroup1" aria-required="true">
 			<input id="radioButtonGroup1_1" type="radio" required="required" value="0">
 			<input id="radioButtonGroup1_2" type="radio" required="required" value="1">
 		</fieldset>
-		<fieldset role="radiogroup" class="radioButtonSelect" id="radioButtonGroup2">
+		<fieldset role="radiogroup" class="radiobuttonselect" id="radioButtonGroup2">
 			<input id="radioButtonGroup2_1" type="radio" value="0">
 			<input id="radioButtonGroup2_2" type="radio" value="1">
 		</fieldset>
 	</div>
 	<div id="disabledAncestorTests">
-		<fieldset role="radiogroup" class="radioButtonSelect" id="radioButtonGroup3" aria-disabled="true">
+		<fieldset role="radiogroup" class="radiobuttonselect" id="radioButtonGroup3" aria-disabled="true">
 			<input id="radioButtonGroup3_1" type="radio" value="0">
 			<input id="radioButtonGroup3_2" type="radio" value="1">
 		</fieldset>
 	</div>
 	<div id="hiddenAncestorTests" hidden="hidden">
-		<fieldset role="radiogroup" class="radioButtonSelect" id="radioButtonGroup4">
+		<fieldset role="radiogroup" class="radiobuttonselect" id="radioButtonGroup4">
 			<input id="radioButtonGroup4_1" type="radio" value="0">
 			<input id="radioButtonGroup4_2" type="radio" value="1">
 		</fieldset>
+	</div>
+	<div id="visibletests">
+		<span id="visibletests1">hello<span>
 	</div>
 </form>

@@ -2,6 +2,7 @@ package com.github.bordertech.wcomponents.render.webxml;
 
 import com.github.bordertech.wcomponents.Renderer;
 import com.github.bordertech.wcomponents.RendererFactory;
+import com.github.bordertech.wcomponents.WTemplate;
 import com.github.bordertech.wcomponents.util.SystemException;
 
 /**
@@ -68,7 +69,10 @@ public class RendererFactoryImpl implements RendererFactory {
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @deprecated Use {@link WTemplate} instead
 	 */
+	@Deprecated
 	@Override
 	public Renderer getTemplateRenderer() {
 		return new VelocityRenderer();

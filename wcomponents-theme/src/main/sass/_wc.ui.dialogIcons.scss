@@ -1,0 +1,7 @@
+/* wc.ui.dialogIcons.scss */
+@import 'mixins-common';
+
+// dialog close control
+.wc_dialog_close:before {
+	content: $fa-var-times;
+}

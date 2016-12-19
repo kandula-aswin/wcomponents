@@ -43,13 +43,13 @@
 				<xs:element ref="ui:margin" minOccurs="0" />
 				<xs:choice maxOccurs="unbounded">
 					<xs:element ref="ui:tab" />
-					<xs:element name="tabGroup">
+					<xs:element name="tabgroup">
 						<xs:annotation>
 							<xs:documentation>Deprecated: do not use.</xs:documentation>
 						</xs:annotation>
 						<xs:complexType>
 							<xs:sequence>
-								<xs:element ref="ui:decoratedLabel" minOccurs="0" />
+								<xs:element ref="ui:decoratedlabel" minOccurs="0" />
 								<xs:choice maxOccurs="unbounded">
 									<xs:element ref="ui:tab" />
 									<xs:element ref="ui:separator" />
@@ -94,6 +94,11 @@
 					<xs:documentation>Indicates the height of the content box for the tab content for all tabs in this tabset. If any tab's content exceeds this height it will
 						provide a scroll mechanism for that tab's content. If not set then th eheight of the tab content is determined by the user agent so as to display all
 						content without scrolling.</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+			<xs:attribute name="groupName" type="xs:NMTOKEN">
+				<xs:annotation>
+					<xs:documentation>Indicates that the collapsible is part of a group of collapsibles the open state of which is controlled by a WCollapsibleToggle.</xs:documentation>
 				</xs:annotation>
 			</xs:attribute>
 		</xs:complexType>

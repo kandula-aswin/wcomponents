@@ -1,7 +1,7 @@
 package com.github.bordertech.wcomponents.lde;
 
 import com.github.bordertech.wcomponents.servlet.WServlet;
-import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.SystemException;
 import java.io.IOException;
 import java.net.BindException;
@@ -25,6 +25,7 @@ import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -35,47 +36,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * @author James Gifford
  * @since 1.0.0
  */
-public abstract class TestServlet extends WServlet {
+public abstract class TestServlet extends WServlet implements LdeLauncher {
 
 	/**
 	 * The logger instance for this class.
 	 */
 	private static final Log LOG = LogFactory.getLog(TestServlet.class);
-
-	/**
-	 * This configuration parameter allows the developer to configure the LDE to use a different set of servlets.
-	 */
-	private static final String WEBDOCS_DIR_PARAM = "bordertech.wcomponents.lde.webdocs.dir";
-
-	/**
-	 * This configuration parameter allows the developer to configure the LDE to use an external theme.
-	 */
-	private static final String WEBDOCS_THEME_DIR_PARAM = "bordertech.wcomponents.lde.theme.dir";
-
-	/**
-	 * This configuration parameter allows the developer to configure the LDE to set a resources directory.
-	 */
-	private static final String WEBDOCS_RESOURCE_DIR_PARAM = "bordertech.wcomponents.lde.resource.dir";
-
-	/**
-	 * This configuration parameter sets which port the LDE runs on.
-	 */
-	private static final String JETTY_PORT_PARAM = "bordertech.wcomponents.lde.server.port";
-
-	/**
-	 * This configuration parameter sets up the Jetty realm file for authenticated access.
-	 */
-	private static final String JETTY_REALM_FILE_PARAM = "bordertech.wcomponents.lde.server.realm.file";
-
-	/**
-	 * This configuration parameter sets up the Jetty realm file for authenticated access.
-	 */
-	private static final String ENABLE_SHUTDOWN_PARAM = "bordertech.wcomponents.lde.shutdown.enabled";
-
-	/**
-	 * This configuration parameter sets the Jetty session timeout interval.
-	 */
-	private static final String SESSION_TIMEOUT_PARAM = "bordertech.wcomponents.lde.session.inactive.interval";
 
 	/**
 	 * The default port to run the LDE on.
@@ -99,6 +65,7 @@ public abstract class TestServlet extends WServlet {
 	 *
 	 * @throws Exception if the LDE fails to start.
 	 */
+	@Override
 	public void run() throws Exception {
 		synchronized (TestServlet.class) {
 			if (server != null) {
@@ -137,7 +104,7 @@ public abstract class TestServlet extends WServlet {
 
 		// We have to set the timeout after the server is started, as Jetty reads
 		// the value from webdefault.xml during start-up.
-		int timeout = Config.getInstance().getInt(SESSION_TIMEOUT_PARAM, 0);
+		int timeout = ConfigurationProperties.getLdeServerSessionTimeout();
 
 		if (timeout > 0) {
 			webapp.getSessionHandler().getSessionManager().setMaxInactiveInterval(timeout);
@@ -173,15 +140,8 @@ public abstract class TestServlet extends WServlet {
 	 * @return the LDE port.
 	 */
 	private static int getLdePort() {
-		int port = DEFAULT_PORT;
 
-		try {
-			port = Config.getInstance().getInt(JETTY_PORT_PARAM, DEFAULT_PORT);
-		} catch (Exception ignored) {
-			LOG.error("Failed to read parameter " + JETTY_PORT_PARAM);
-		}
-
-		return port;
+		return ConfigurationProperties.getLdeServerPort();
 	}
 
 	/**
@@ -253,7 +213,7 @@ public abstract class TestServlet extends WServlet {
 					new ResourceCollection(union.toArray(new Resource[union.size()])));
 		}
 
-		webapp.addServlet(getClass().getName(), "/app/*");
+		webapp.addServlet(new ServletHolder(this), "/app/*");
 
 		// This is required if projects define their own web.xml,
 		// we still need to serve up the theme from inside a jar
@@ -272,7 +232,7 @@ public abstract class TestServlet extends WServlet {
 		}
 
 		// Initialise security
-		String realmFile = Config.getInstance().getString(JETTY_REALM_FILE_PARAM);
+		String realmFile = ConfigurationProperties.getLdeServerJettyRealmFile();
 
 		if (realmFile != null) {
 			HashLoginService loginService = new HashLoginService("LdeRunner", realmFile);
@@ -290,6 +250,7 @@ public abstract class TestServlet extends WServlet {
 	 *
 	 * @throws java.lang.InterruptedException an interrupted exception
 	 */
+	@Override
 	public void stop() throws InterruptedException {
 		synchronized (TestServlet.class) {
 			if (server != null) {
@@ -305,9 +266,18 @@ public abstract class TestServlet extends WServlet {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public boolean isRunning() {
+		return server != null && server.isRunning();
+	}
+
+	/**
 	 * @return the URL where this servlet can be accessed from.
 	 */
-	protected String getUrl() {
+	@Override
+	public String getUrl() {
 		return url;
 	}
 
@@ -336,7 +306,7 @@ public abstract class TestServlet extends WServlet {
 	 * @return the webdocs directory, or null if not defined.
 	 */
 	protected String[] getWebdocsDir() {
-		String[] docs = Config.getInstance().getStringArray(WEBDOCS_DIR_PARAM);
+		String[] docs = ConfigurationProperties.getLdeServerWebDocsDir();
 		return docs == null || docs.length == 0 ? null : docs;
 	}
 
@@ -344,7 +314,7 @@ public abstract class TestServlet extends WServlet {
 	 * @return the theme webdocs directory, or null if not defined.
 	 */
 	protected String[] getThemeWebdocs() {
-		String[] docs = Config.getInstance().getStringArray(WEBDOCS_THEME_DIR_PARAM);
+		String[] docs = ConfigurationProperties.getLdeServerWebDocsThemeDir();
 		return docs == null || docs.length == 0 ? null : docs;
 	}
 
@@ -352,7 +322,7 @@ public abstract class TestServlet extends WServlet {
 	 * @return the resource directory, or null if not defined.
 	 */
 	protected String[] getResourceDir() {
-		String[] docs = Config.getInstance().getStringArray(WEBDOCS_RESOURCE_DIR_PARAM);
+		String[] docs = ConfigurationProperties.getLdeServerWebDocsResourcesDir();
 		return docs == null || docs.length == 0 ? null : docs;
 	}
 
@@ -397,6 +367,6 @@ public abstract class TestServlet extends WServlet {
 	 * @return true if shutdown is enabled, false otherwise.
 	 */
 	protected boolean isShutdownEnabled() {
-		return Config.getInstance().getBoolean(ENABLE_SHUTDOWN_PARAM, false);
+		return ConfigurationProperties.getLdeServerEnableShutdown();
 	}
 }

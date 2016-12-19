@@ -38,8 +38,8 @@ define(["wc/dom/event",
 		 * @private
 		 */
 		function Collapsible() {
-			var COLLAPSIBLE_CONTAINER = new Widget("${wc.dom.html5.element.details}"),
-				COLLAPSIBLE_HEADER = new Widget("${wc.dom.html5.element.summary}"),
+			var COLLAPSIBLE_CONTAINER = new Widget("details"),
+				COLLAPSIBLE_HEADER = new Widget("summary"),
 				BOOTSTRAPPED = "wc.ui.collapsible.bootStrapped",
 				TRUE = "true",
 				FALSE = "false";
@@ -231,7 +231,7 @@ define(["wc/dom/event",
 			function writeState(container, stateContainer) {
 				function writeStateCollapsible($element) {
 					var val = shed.isExpanded($element) ? "open" : "closed";
-					formUpdateManager.writeStateField(stateContainer, $element.id, val);
+					formUpdateManager.writeStateField(stateContainer, $element.id, val, false, true);
 				}
 				Array.prototype.forEach.call(COLLAPSIBLE_CONTAINER.findDescendants(container), writeStateCollapsible);
 				if (COLLAPSIBLE_CONTAINER.isOneOfMe(container)) {

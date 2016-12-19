@@ -1,40 +1,39 @@
 /* wc.ui.definitionList.scss */
-@import 'mixins_common.scss';
+@import 'mixins-common';
 
+// NOTE: the dl element is required here to differentiate from WFieldLayout with the same classNames generated from
+// LAYOUT attribute in XML
 dl {
 	margin: 0;
-
-	//type flat
-	// NOTE: the dl element is required here to differentiate from WFieldLayout with the same classNames generated from
-	// LAYOUT attribute in XML
-	&.flat {
-		vertical-align: text-top;
-
-		> dt,
-		> dd {
-			display: inline-block;
-			margin-left: 0;
-			padding-left: 0;
-			vertical-align: top;
-			width: auto;
-		}
-
-		> dt ~ dt { // any dt with a preceding sibling gets margin-left
-			margin-left: $hgap-normal;
-		}
-
-		> dd { // all dds must have a preceding sibling so they all get margin-left
-			margin-left: $hgap-small;
-		}
-	}
 }
 
 dt {
 	font-weight: bold;
 }
 
+.wc-definitionlist-type-flat {
+	vertical-align: text-top;
+
+	> dt,
+	> dd {
+		display: inline-block;
+		margin-left: 0;
+		padding-left: 0;
+		vertical-align: top;
+		width: auto;
+	}
+
+	> dt ~ dt { // any dt with a preceding sibling gets margin-left
+		margin-left: $wc-gap-normal;
+	}
+
+	> dd { // all dds must have a preceding sibling so they all get margin-left
+		margin-left: $wc-gap-small;
+	}
+}
+
 // type column
-.column {
+.wc-definitionlist-type-column {
 	> dt {
 		display: inline-block;
 		margin-right: 0.5%;
@@ -53,10 +52,22 @@ dt {
 		vertical-align: text-top;
 		width: 69.5%;
 	}
+}
 
+// type stacked
+.wc-definitionlist-type-stacked {
 	> dt,
 	> dd {
-		@include respond(phonelike) {
+		display: block;
+		margin-left: 0;
+		padding-left: 0;
+	}
+}
+
+@include respond-phonelike {
+	.wc-definitionlist-type-column {
+		> dt,
+		> dd {
 			@include border-box;
 			display: block;
 			margin-left: 0;
@@ -65,14 +76,3 @@ dt {
 		}
 	}
 }
-
-// type stacked
-.stacked {
-	> dt,
-	> dd {
-		display: block;
-		margin-left: 0;
-		padding-left: 0;
-	}
-}
-/* end wc.ui.definitionList.scss */

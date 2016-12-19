@@ -29,8 +29,9 @@ define(["wc/dom/event",
 		 */
 		function Shuffler() {
 			var MOVE_BUTTON = new Widget("button", "wc_sorter"),
-				CONTAINER = new Widget("fieldset", "shuffler"),
-				SHUFFLER_SELECT = new Widget("select", "shuffler"),
+				FIELDSET = new Widget("fieldset"),
+				CONTAINER = FIELDSET.extend("wc-shuffler"),
+				SHUFFLER_SELECT,
 				UP = "up",
 				DOWN = "down",
 				TOP = "top",
@@ -42,16 +43,20 @@ define(["wc/dom/event",
 				 * IE ensure the correct options are selected/deselected in the submit element,
 				 * based on the selections made in the available/chosen elements.
 				 */
-				function _writeState(list) {
-					var options = list.options,	i, len, next;
-					if (!shed.isDisabled(list)) {
+				function _writeState(container) {
+					SHUFFLER_SELECT = SHUFFLER_SELECT || new Widget("select", "wc_shuffler");
+					var list = SHUFFLER_SELECT.findDescendant(container),
+						options, i, len, next;
+
+					if (list && !shed.isDisabled(list)) {
+						options = list.options;
 						for (i = 0, len = options.length; i < len; i++) {
 							next = options[i];
-							formUpdateManager.writeStateField(stateContainer, list.parentNode.id, next.value);
+							formUpdateManager.writeStateField(stateContainer, container.id, next.value);
 						}
 					}
 				}
-				Array.prototype.forEach.call(SHUFFLER_SELECT.findDescendants(form), _writeState);
+				Array.prototype.forEach.call(CONTAINER.findDescendants(form), _writeState);
 			}
 
 			/**
@@ -61,10 +66,9 @@ define(["wc/dom/event",
 			 * @param {Element} element The button which causes all the fuss.
 			 */
 			function move(element) {
-				var selected, i, container,
+				var selected, i,
 					select = document.getElementById(element.getAttribute("aria-controls")),
-					position = element.value,
-					result = false;
+					position = element.value;
 
 				/*
 				 * Given an option we look up position and move the option accordingly (if possible)
@@ -95,7 +99,6 @@ define(["wc/dom/event",
 							reference = option.previousSibling;
 							if (reference && selected.indexOf(reference) === -1) {  // the test on selected is to prevent a group of consecutive options at the top or bottom fighting each other
 								parent.insertBefore(option, reference);
-								result = true;
 							}
 							break;
 						case DOWN:
@@ -105,25 +108,21 @@ define(["wc/dom/event",
 							if (reference) {
 								if (selected.indexOf(option.nextSibling) === -1 || selected.indexOf(reference) === -1) {
 									parent.insertBefore(option, reference);
-									result = true;
 								}
 							}
 							else if ((reference = option.nextSibling) && selected.indexOf(reference) === -1) {
 								// this will happen if we try to move the penultimate child down
 								parent.appendChild(option);
-								result = true;
 							}
 							break;
 						case TOP:
 							if ((reference = parent.firstChild) && reference !== option) {
 								parent.insertBefore(option, reference);
-								result = true;
 							}
 							break;
 						case BOTTOM:
 							if (option.nextSibling) {
 								parent.appendChild(option);
-								result = true;
 							}
 							break;
 					}
@@ -138,9 +137,6 @@ define(["wc/dom/event",
 					else {
 						selected.forEach(_moveIt);
 					}
-				}
-				if (result && (container = CONTAINER.findAncestor(select)) && container.hasAttribute("data-wc-ajaxalias")) {
-					ajaxRegion.requestLoad(container);
 				}
 			}
 

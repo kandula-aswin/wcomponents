@@ -9,10 +9,9 @@
  * @requires module:wc/dom/shed
  * @requires module:wc/dom/Widget
  * @requires module:wc/dom/initialise
- * @requires module:wc/ui/menu/menuItem
  */
 define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "wc/dom/initialise", "wc/ui/menu/menuItem"],
-	/** @param abstractMenu wc/ui/menu/core @param keyWalker wc/dom/keyWalker @param shed wc/dom/shed @param Widget wc/dom/Widget @param initialise wc/dom/initialise @ignore */
+	/** @param abstractMenu @param keyWalker @param shed  @param Widget @param initialise @ignore */
 	function(abstractMenu, keyWalker, shed, Widget, initialise) {
 		"use strict";
 
@@ -43,7 +42,7 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 			 * @public
 			 * @override
 			 */
-			this.ROOT = new Widget("", "column", {role: "menu"});
+			this.ROOT = new Widget("", "wc-menu-type-column");
 
 			/**
 			 * Reset the key map based on the type and/or state of the menu item passed in.
@@ -51,11 +50,17 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 			 * @function
 			 * @protected
 			 * @override
-			 * @param {Element} element The menu item which has focus.
+			 * @param {Element} item The menu item which has focus.
 			 */
-			this._remapKeys = function(element) {
+			this._remapKeys = function(item) {
+				var element = item,
+					root = this.getRoot(item);
+
+				if (!root) {
+					return;
+				}
 				if (this._isBranchOrOpener(element)) {
-					element = this._getBranch(element);
+					element = this._getBranchExpandableElement(element);
 					if (!shed.isExpanded(element)) {
 						this._keyMap["DOM_VK_RIGHT"] = this._FUNC_MAP.ACTION;
 					}
@@ -79,42 +84,6 @@ define(["wc/ui/menu/core", "wc/dom/keyWalker", "wc/dom/shed", "wc/dom/Widget", "
 					"DOM_VK_LEFT": this._FUNC_MAP.CLOSE_MY_BRANCH,
 					"DOM_VK_ESCAPE": this._FUNC_MAP.CLOSE_MY_BRANCH
 				};
-			};
-
-			/**
-			 * When a mobile device is used add a close button to the top of every submenu content as the submenus are
-			 * shown near full screen and there is (usually) no ESCAPE key.
-			 *
-			 * @function
-			 * @protected
-			 * @override
-			 * @param {Element} element The element which may be a menu, submenu or something containing a menu.
-			 */
-			this.updateMenusForMobile = function(element) {
-				var candidates,
-					MENU_FIXED = "data-wc-menufixed";
-				if (!this.isMobile) {
-					return;
-				}
-				if (this._wd.submenu.isOneOfMe(element)) {
-					if (this.ROOT.findAncestor(element)) {
-						this.fixSubMenuContent(element);
-					}
-					return;
-				}
-				else if (this.ROOT.isOneOfMe(element)) {
-					candidates = [element];
-				}
-				else {
-					candidates = this.ROOT.findDescendants(element);
-				}
-
-				Array.prototype.forEach.call(candidates, function(next) {
-					if (!next.hasAttribute(MENU_FIXED)) {
-						next.setAttribute(MENU_FIXED, "true");
-						Array.prototype.forEach.call(this._wd.submenu.findDescendants(next), this.fixSubMenuContent, this);
-					}
-				}, this);
 			};
 		}
 

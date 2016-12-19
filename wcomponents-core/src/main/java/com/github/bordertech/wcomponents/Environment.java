@@ -51,17 +51,6 @@ public interface Environment extends Serializable {
 	String THEME_RESOURCE_PATH_NAME = "wc_th";
 
 	/**
-	 * The parameter variable that contains the URL path to the support servlet that services targeted requests for a
-	 * Portlet application. This parameter is only applicable to portlet applications
-	 */
-	String SUPPORT_SERVLET_PATH = "bordertech.wcomponents.servlet.support.path";
-
-	/**
-	 * The parameter variable that contains the URL path to the web content for the Theme.
-	 */
-	String THEME_CONTENT_PATH = "bordertech.wcomponents.theme.content.path";
-
-	/**
 	 * The URL query string parameter variable name that is used to ensure that the URL appears unique to the browser.
 	 * This is used to prevent caching of PDFs, TR5s etc by the client.
 	 */
@@ -115,10 +104,7 @@ public interface Environment extends Serializable {
 
 	/**
 	 * Gets the base URL under which web applications are hosted. This AppHostPath can be used to create url links to
-	 * applications that have been given fixed relative names. Examples of what this method may return:
-	 * <dl>
-	 * <dt>Servlet</dt><dd></dd>
-	 * </dl>
+	 * applications that have been given fixed relative names.
 	 *
 	 * @return the base URL under which web applications are hosted.
 	 */
@@ -127,12 +113,6 @@ public interface Environment extends Serializable {
 	/**
 	 * Gets the base URL under which the web content for the Theme is hosted. Web content is static content such as css,
 	 * js, html, and image files.
-	 * <p>
-	 * Examples of what this method may return:
-	 * </p>
-	 * <dl>
-	 * <dt>Servlet</dt><dd></dd>
-	 * </dl>
 	 *
 	 * @return the base URL under which the web content for the Theme is hosted.
 	 */
@@ -143,12 +123,6 @@ public interface Environment extends Serializable {
 	 * <p>
 	 * Implementations ensure that this method returns a URL WITHOUT a trailing slash, as in above example.
 	 * </p>
-	 * <p>
-	 * Examples of what this method may return:
-	 * </p>
-	 * <dl>
-	 * <dt>Servlet</dt><dd>http://localhost:8080</dd>
-	 * </dl>
 	 *
 	 * @return the base url at which this web application is hosted.
 	 */
@@ -156,13 +130,7 @@ public interface Environment extends Serializable {
 
 	/**
 	 * Get the "host-free" part of the base url for this web application. Eg, if the base url is
-	 * http://localhost:8080/visas, then the "host-free" part is "/visas"
-	 * <p>
-	 * Examples of what this method may return:
-	 * </p>
-	 * <dl>
-	 * <dt>Servlet</dt><dd></dd>
-	 * </dl>
+	 * http://localhost:8080/visas, then the "host-free" part is "/visas".
 	 *
 	 * @return Get the "host-free" part of the base url for this web application.
 	 */

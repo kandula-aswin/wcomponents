@@ -40,7 +40,8 @@ public class WCollapsibleRenderer_Test extends AbstractWebXmlRendererTestCase {
 		WCollapsible collapsible = new WCollapsible(new WText(COLLAPSIBLE_CONTENT),
 				COLLAPSIBLE_HEADING, WCollapsible.CollapsibleMode.SERVER);
 		assertSchemaMatch(collapsible);
-		assertXpathEvaluatesTo("server", "//ui:collapsible/@mode", collapsible);
+		// see https://github.com/BorderTech/wcomponents/issues/694
+		assertXpathEvaluatesTo("dynamic", "//ui:collapsible/@mode", collapsible);
 		assertRenderContentCorrectly(collapsible, false, true);
 	}
 
@@ -147,7 +148,7 @@ public class WCollapsibleRenderer_Test extends AbstractWebXmlRendererTestCase {
 		assertSchemaMatch(collapsible);
 		assertXpathEvaluatesTo("true", "//ui:collapsible/@collapsed", collapsible);
 		assertXpathEvaluatesTo(COLLAPSIBLE_HEADING,
-				"normalize-space(//ui:collapsible/ui:decoratedLabel/ui:labelBody)", collapsible);
+				"normalize-space(//ui:collapsible/ui:decoratedlabel/ui:labelbody)", collapsible);
 
 		if (shouldRenderContentWhenClosed) {
 			assertXpathEvaluatesTo(COLLAPSIBLE_CONTENT,
@@ -160,7 +161,7 @@ public class WCollapsibleRenderer_Test extends AbstractWebXmlRendererTestCase {
 		assertSchemaMatch(collapsible);
 		assertXpathNotExists("//ui:collapsible/@collapsed", collapsible);
 		assertXpathEvaluatesTo(COLLAPSIBLE_HEADING,
-				"normalize-space(//ui:collapsible/ui:decoratedLabel/ui:labelBody)", collapsible);
+				"normalize-space(//ui:collapsible/ui:decoratedlabel/ui:labelbody)", collapsible);
 
 		if (shouldRenderContentWhenOpen) {
 			assertXpathEvaluatesTo(COLLAPSIBLE_CONTENT,

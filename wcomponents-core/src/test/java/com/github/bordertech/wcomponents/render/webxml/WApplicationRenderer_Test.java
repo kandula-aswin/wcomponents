@@ -9,6 +9,7 @@ import com.github.bordertech.wcomponents.WLabel;
 import com.github.bordertech.wcomponents.WText;
 import com.github.bordertech.wcomponents.WTextField;
 import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -99,8 +100,6 @@ public class WApplicationRenderer_Test extends AbstractWebXmlRendererTestCase {
 				application);
 		assertXpathEvaluatesTo(environment.getWServletPath(), "//ui:application/@ajaxUrl",
 				application);
-		assertXpathEvaluatesTo(environment.getWServletPath(), "//ui:application/@dataUrl",
-				application);
 		assertXpathNotExists("//ui:application/@defaultFocusId", application);
 	}
 
@@ -128,8 +127,6 @@ public class WApplicationRenderer_Test extends AbstractWebXmlRendererTestCase {
 		assertXpathEvaluatesTo(WComponent.DEFAULT_APPLICATION_ID, "//ui:application/@id",
 				application);
 		assertXpathEvaluatesTo(environment.getWServletPath(), "//ui:application/@ajaxUrl",
-				application);
-		assertXpathEvaluatesTo(environment.getWServletPath(), "//ui:application/@dataUrl",
 				application);
 		assertXpathEvaluatesTo(focussedComponent.getId(), "//ui:application/@defaultFocusId",
 				application);
@@ -198,10 +195,10 @@ public class WApplicationRenderer_Test extends AbstractWebXmlRendererTestCase {
 		// Want to test with "tracking details set"
 		Configuration originalConfig = Config.getInstance();
 		Configuration config = Config.copyConfiguration(originalConfig);
-		config.setProperty("bordertech.wcomponents.tracking.clientid", "CID");
-		config.setProperty("bordertech.wcomponents.tracking.applicationname", "APPL");
-		config.setProperty("bordertech.wcomponents.tracking.cookiedomain", "CD");
-		config.setProperty("bordertech.wcomponents.tracking.datacollectiondomain", "DCD");
+		config.setProperty(ConfigurationProperties.TRACKING_CLIENT_ID, "CID");
+		config.setProperty(ConfigurationProperties.TRACKING_APPLICATION_NAME, "APPL");
+		config.setProperty(ConfigurationProperties.TRACKING_COOKIE_DOMAIN, "CD");
+		config.setProperty(ConfigurationProperties.TRACKING_DATA_COLLECTION_DOMAIN, "DCD");
 		Config.setConfiguration(config);
 
 		try {
@@ -214,6 +211,32 @@ public class WApplicationRenderer_Test extends AbstractWebXmlRendererTestCase {
 			// Remove overrides
 			Config.setConfiguration(originalConfig);
 		}
+	}
+
+	@Test
+	public void testJsResources() throws IOException, SAXException, XpathException {
+		// No resource
+		WApplication application = new WApplication();
+		assertSchemaMatch(application);
+		assertXpathNotExists("//ui:application/ui:js", application);
+
+		// Add URL resource
+		application.addJsUrl("URL");
+		assertSchemaMatch(application);
+		assertXpathEvaluatesTo("URL", "//ui:application/ui:js/@url", application);
+	}
+
+	@Test
+	public void testCssResources() throws IOException, SAXException, XpathException {
+		// No resource
+		WApplication application = new WApplication();
+		assertSchemaMatch(application);
+		assertXpathNotExists("//ui:application/ui:css", application);
+
+		// Add URL resource
+		application.addCssUrl("URL");
+		assertSchemaMatch(application);
+		assertXpathEvaluatesTo("URL", "//ui:application/ui:css/@url", application);
 	}
 
 }

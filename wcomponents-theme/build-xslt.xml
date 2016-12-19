@@ -24,10 +24,9 @@
 	<property name="xsl.target.debug.file.name" value="${xsl.target.file.prefix}${debug.target.file.name.suffix}.xsl"/>
 	<property name="xsl.target.file.name" value="${xsl.target.file.prefix}.xsl"/>
 	<property name="xsl.target.intermediate.file.name" value="${xsl.target.file.prefix}${xsl.target.intermediate.file.suffix}"/>
-	<property name="plugin.xslt.dir.name" value="xslt"/>
 
 	<target name="build"
-		depends="init, copyXslSrc, buildI18nWrappers, buildXslt, minify"
+		depends="init, copyXslSrc, buildXslt, minify"
 		description="Builds XSLT artifacts then minifies them">
 <!--		<loadJsDebugMap propertyToSet="xsl.debug.js.map"/>
 		<replace dir="${xslt.build.target.dir}" includes="*${debug.target.file.name.suffix}.xsl" token="@JS_DEBUG_MAP@" value="${xsl.debug.js.map}"/>
@@ -45,12 +44,12 @@
 			</filterchain>
 		</copy>
 		<mkdir dir="${xsl.tmp.src.dir}/i18n"/>
-		<xslt basedir="${i18n.build.target.dir}" destdir="${xsl.tmp.src.dir}/i18n" style="${tmp.dir}/build_i18n_params.xsl">
+		<xslt basedir="${i18n.build.target.dir}" destdir="${xsl.tmp.src.dir}/i18n" style="${tmp.dir}/build_i18n_params.xsl" includes="merged.*">
 			<factory name="net.sf.saxon.TransformerFactoryImpl"/>
 			<param name="includeUrl" expression="${xsl.target.debug.file.name}"/>
-			<regexpmapper from="^(.*)\.xml" to="${xslt.target.file.name}_\1${debug.target.file.name.suffix}.xsl"/>
+			<regexpmapper from="^merged\.(.*)\.xml" to="${xslt.target.file.name}_\1${debug.target.file.name.suffix}.xsl"/>
 		</xslt>
-		
+
 		<!--
 			Seems to be a bug in ant 1.8.2 where it gets confused by the backslash in the \1 matched group ref
 		-->
@@ -58,24 +57,7 @@
 	</target>
 
 	<target name="buildXslt">
-		<for param="file">
-			<fileset dir="${xsl.tmp.src.dir}/i18n">
-				<include name="*.xsl"/>
-			</fileset>
-			<sequential>
-				<var name="base.name" unset="true"/>
-				<basename property="base.name" file="@{file}"/><!-- base.name is now the file name without the path -->
-				<echo>Building ${base.name}</echo>
-				<copy file="@{file}"
-					todir="${xsl.tmp.src.dir}"
-					overwrite="true"/>
-				<buildXSLTPattern pattern="*" targetFile="${base.name}"/>
-				<delete file="${xsl.tmp.src.dir}/${base.name}"/>
-			</sequential>
-		</for>
-		<copy file="${xslt.build.target.dir}/${xslt.target.file.name}_${default.i18n.locale}${debug.target.file.name.suffix}.xsl"
-			  tofile="${xslt.build.target.dir}/${xslt.target.file.name}${debug.target.file.name.suffix}.xsl"
-			  overwrite="true"/>
+		<buildXSLTPattern pattern="*" targetFile="${xslt.target.file.name}${debug.target.file.name.suffix}.xsl"/>
 	</target>
 
 	<macrodef name="buildXSLTPattern">
@@ -122,24 +104,8 @@
 				<expandproperties/>
 			</filterchain>
 		</copy>
-		<copy todir="${xsl.tmp.src.dir}" overwrite="true" flatten="true">
-			<fileset dir="${common.src.plugin.dir}" includesfile="${plugin.includesfile}" excludesfile="${excludesfile}" erroronmissingdir="false">
-				<filename name="**/${plugin.xslt.dir.name}/*.xsl"/>
-			</fileset>
-			<filterchain>
-				<expandproperties/>
-			</filterchain>
-		</copy>
 		<copy todir="${xsl.tmp.src.dir}" overwrite="true">
 			<fileset dir="${impl.xsl.src.dir}" includes="*.xsl" erroronmissingdir="false"/>
-			<filterchain>
-				<expandproperties/>
-			</filterchain>
-		</copy>
-		<copy todir="${xsl.tmp.src.dir}" overwrite="true" flatten="true">
-			<fileset dir="${impl.src.plugin.dir}" includesfile="${plugin.includesfile}" excludesfile="${excludesfile}" erroronmissingdir="false">
-				<filename name="**/${plugin.xslt.dir.name}/*.xsl"/>
-			</fileset>
 			<filterchain>
 				<expandproperties/>
 			</filterchain>

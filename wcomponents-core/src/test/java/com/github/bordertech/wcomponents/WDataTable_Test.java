@@ -154,7 +154,7 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testExpandModeAccessors() {
 		WDataTable table = new WDataTable();
-		WDataTable.ExpandMode type1 = WDataTable.ExpandMode.SERVER;
+		WDataTable.ExpandMode type1 = WDataTable.ExpandMode.CLIENT;
 		WDataTable.ExpandMode type2 = WDataTable.ExpandMode.DYNAMIC;
 
 		Assert.assertEquals("Incorrect default select mode", WDataTable.ExpandMode.NONE, table.
@@ -177,7 +177,7 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testPaginationModeAccessors() {
 		WDataTable table = new WDataTable();
-		WDataTable.PaginationMode mode1 = WDataTable.PaginationMode.SERVER;
+		WDataTable.PaginationMode mode1 = WDataTable.PaginationMode.CLIENT;
 		WDataTable.PaginationMode mode2 = WDataTable.PaginationMode.DYNAMIC;
 
 		Assert.assertEquals("Incorrect default pagination mode", WDataTable.PaginationMode.NONE,
@@ -200,18 +200,17 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testSortModeAccessors() {
 		WDataTable table = new WDataTable();
-		WDataTable.SortMode type1 = WDataTable.SortMode.SERVER;
-		WDataTable.SortMode type2 = WDataTable.SortMode.DYNAMIC;
+		WDataTable.SortMode type1 = WDataTable.SortMode.NONE;
 
-		Assert.assertEquals("Incorrect default select mode", type1, table.getSortMode());
+		Assert.assertEquals("Incorrect default select mode", WDataTable.SortMode.DYNAMIC, table.getSortMode());
 
 		table.setLocked(true);
 		setActiveContext(createUIContext());
-		table.setSortMode(type2);
-		Assert.assertSame("Incorrect select mode for modified session", type2, table.getSortMode());
+		table.setSortMode(type1);
+		Assert.assertSame("Incorrect select mode for modified session", type1, table.getSortMode());
 
 		setActiveContext(createUIContext());
-		Assert.assertSame("Incorrect select mode for other sessions", type1, table.getSortMode());
+		Assert.assertSame("Incorrect select mode for other sessions", WDataTable.SortMode.DYNAMIC, table.getSortMode());
 	}
 
 	@Test
@@ -296,28 +295,6 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 
 		setActiveContext(createUIContext());
 		Assert.assertTrue("Incorrect show row indices for other sessions", table.isShowRowIndices());
-	}
-
-	@Test
-	public void testSubmitOnRowSelectAccessors() {
-		WDataTable table = new WDataTable();
-
-		Assert.
-				assertFalse("Should not submit on row select by default", table.
-						isSubmitOnRowSelect());
-
-		table.setSubmitOnRowSelect(true);
-		Assert.assertTrue("Incorrect default submit on row select", table.isSubmitOnRowSelect());
-
-		table.setLocked(true);
-		setActiveContext(createUIContext());
-		table.setSubmitOnRowSelect(false);
-		Assert.assertFalse("Incorrect submit on row select for modified session", table.
-				isSubmitOnRowSelect());
-
-		setActiveContext(createUIContext());
-		Assert.assertTrue("Incorrect submit on row select for other sessions", table.
-				isSubmitOnRowSelect());
 	}
 
 	@Test
@@ -568,7 +545,7 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testHandlePaginationRequest() {
 		WDataTable table = new WDataTable();
-		table.setPaginationMode(WDataTable.PaginationMode.SERVER);
+		table.setPaginationMode(WDataTable.PaginationMode.DYNAMIC);
 		table.setDataModel(new SimpleTableDataModel(new String[100][1]));
 		table.setRowsPerPage(10);
 
@@ -590,7 +567,7 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testHandleExpansionRequest() {
 		WDataTable table = new WDataTable();
-		table.setExpandMode(WDataTable.ExpandMode.SERVER);
+		table.setExpandMode(WDataTable.ExpandMode.DYNAMIC);
 		table.setDataModel(new SimpleTableDataModel(new String[100][1]));
 
 		table.setLocked(true);
@@ -681,7 +658,7 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	public void testMultipleHandleSelectionSortedDataRequest() {
 		WDataTable table = new WDataTable();
 		table.setSelectMode(WDataTable.SelectMode.MULTIPLE);
-		table.setPaginationMode(PaginationMode.SERVER);
+		table.setPaginationMode(PaginationMode.DYNAMIC);
 		table.setRowsPerPage(3);
 
 		SimpleBeanBoundTableDataModel model = new SimpleBeanBoundTableDataModel(new String[]{"."});
@@ -979,9 +956,9 @@ public final class WDataTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testSetSortMode() {
 		WDataTable table = new WDataTable();
-		table.setSortMode(WDataTable.SortMode.SERVER);
+		table.setSortMode(WDataTable.SortMode.DYNAMIC);
 
-		Assert.assertEquals("should return SortMode set", WDataTable.SortMode.SERVER, table.
+		Assert.assertEquals("should return SortMode set", WDataTable.SortMode.DYNAMIC, table.
 				getSortMode());
 	}
 

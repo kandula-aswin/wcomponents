@@ -50,7 +50,6 @@ final class WApplicationRenderer extends AbstractWebXmlRenderer {
 		xml.appendOptionalAttribute("class", component.getHtmlClass());
 		xml.appendAttribute("applicationUrl", uic.getEnvironment().getPostPath());
 		xml.appendAttribute("ajaxUrl", uic.getEnvironment().getWServletPath());
-		xml.appendAttribute("dataUrl", uic.getEnvironment().getWServletPath()); // TODO: Rationalise this
 		xml.appendOptionalAttribute("unsavedChanges", application.hasUnsavedChanges(), "true");
 		xml.appendOptionalAttribute("title", application.getTitle());
 		xml.appendOptionalAttribute("defaultFocusId", uic.isFocusRequired() && !Util.empty(focusId),
@@ -76,6 +75,25 @@ final class WApplicationRenderer extends AbstractWebXmlRenderer {
 				xml.appendTagOpen("ui:param");
 				xml.appendAttribute("name", entry.getKey());
 				xml.appendAttribute("value", entry.getValue());
+				xml.appendEnd();
+			}
+		}
+		// Custom CSS Resources (if any)
+		for (WApplication.ApplicationResource resource : application.getCssResources()) {
+			String url = resource.getTargetUrl();
+			if (!Util.empty(url)) {
+				xml.appendTagOpen("ui:css");
+				xml.appendAttribute("url", url);
+				xml.appendEnd();
+			}
+		}
+
+		// Custom JavaScript Resources (if any)
+		for (WApplication.ApplicationResource resource : application.getJsResources()) {
+			String url = resource.getTargetUrl();
+			if (!Util.empty(url)) {
+				xml.appendTagOpen("ui:js");
+				xml.appendAttribute("url", url);
 				xml.appendEnd();
 			}
 		}

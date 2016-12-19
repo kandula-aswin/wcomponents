@@ -1,17 +1,13 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
 	<xsl:import href="wc.ui.menu.n.hasStickyOpen.xsl"/>
 	<!--
 		The tabIndex is set on the first visible, enabled item in a menu.
 		
-		NOTE: 2013-07-23 Changed to match {{http://www.w3.org/TR/wai-aria-practices/#menu}},
-		and {{http://www.w3.org/TR/wai-aria-practices/#TreeView}} which stipulate:
+		NOTE: 2013-07-23 Changed to match http://www.w3.org/TR/wai-aria-practices/#menu which stipulates that for menu/menu bar the first item is 
+		focusable.
 		
-		* for menu/menu bar the first item is focusable; and
-		* for tree the top node is focusable.
-		
-		We have retained the non-focusability of disabled items since graphical user
-		agents do not allow disabled controls to receive focus.
+		We have retained the non-focusability of disabled items since graphical user agents do not allow disabled controls to receive focus.
 	-->
 	<xsl:template name="menuTabIndexHelper">
 		<xsl:param name="menu"/>
@@ -32,12 +28,12 @@
 			</xsl:when>
 			<!-- if I am disabled I cannot have tabIndex but only need explicity -1 if I am a menuItem with no @URL and not @submit="true"-->
 			<xsl:when test="@disabled">
-				<xsl:if test="self::ui:menuItem and not(@url or @submit)">
+				<xsl:if test="self::ui:menuitem and not(@url or @submit)">
 					<xsl:text>-1</xsl:text>
 				</xsl:if>
 			</xsl:when>
 			<!-- if I have a closed or disabled submenu ancestor (or open if sticky is 0) which is a descendant of my root menu then I cannot have tabIndex -->
-			<xsl:when test="ancestor::ui:submenu[1][ancestor::ui:menu[1]=$menu and (@disabled or $stickyOpen=0 or not(@open))]">-1</xsl:when>
+			<xsl:when test="ancestor::ui:submenu[1][ancestor::ui:menu[1] eq $menu and (@disabled or number($stickyOpen) eq 0 or not(@open))]">-1</xsl:when>
 			<xsl:otherwise>0</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>

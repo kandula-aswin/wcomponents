@@ -3,6 +3,7 @@ package com.github.bordertech.wcomponents;
 import com.github.bordertech.wcomponents.WRepeater.SubUIContext;
 import com.github.bordertech.wcomponents.WTable.ExpandMode;
 import com.github.bordertech.wcomponents.WTable.PaginationMode;
+import com.github.bordertech.wcomponents.WTable.PaginationLocation;
 import com.github.bordertech.wcomponents.WTable.RowIdWrapper;
 import com.github.bordertech.wcomponents.WTable.SelectAllType;
 import com.github.bordertech.wcomponents.WTable.SelectMode;
@@ -108,6 +109,13 @@ public final class WTable_Test extends AbstractWComponentTestCase {
 	}
 
 	@Test
+	public void testPaginationLocationAccessors() {
+		assertAccessorsCorrect(new WTable(), "paginationLocation", PaginationLocation.AUTO,
+				PaginationLocation.TOP,
+				PaginationLocation.BOTH);
+	}
+
+	@Test
 	public void testSortModeAccessors() {
 		assertAccessorsCorrect(new WTable(), "sortMode", SortMode.NONE, SortMode.DYNAMIC,
 				SortMode.NONE);
@@ -127,6 +135,11 @@ public final class WTable_Test extends AbstractWComponentTestCase {
 	}
 
 	@Test
+	public void testToggleSubRowSelectionAccessors() {
+		assertAccessorsCorrect(new WTable(), "toggleSubRowSelection", false, true, false);
+	}
+
+	@Test
 	public void testSummaryAccessors() {
 		assertAccessorsCorrect(new WTable(), "summary", null, "summary1", "summary2");
 	}
@@ -134,6 +147,11 @@ public final class WTable_Test extends AbstractWComponentTestCase {
 	@Test
 	public void testCaptionAccessors() {
 		assertAccessorsCorrect(new WTable(), "caption", null, "caption1", "caption2");
+	}
+
+	@Test
+	public void testRowHeadersAccessors() {
+		assertAccessorsCorrect(new WTable(), "rowHeaders", false, true, false);
 	}
 
 	@Test
@@ -526,7 +544,6 @@ public final class WTable_Test extends AbstractWComponentTestCase {
 				.getSelectedRows().isEmpty());
 	}
 
-	// TODO check sort test???
 	@Test
 	public void testHandleSortRequest() {
 

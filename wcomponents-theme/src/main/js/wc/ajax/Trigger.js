@@ -8,7 +8,6 @@
  *
  * @module
  *
- * @requires external:sprintf/sprintf
  * @requires module:wc/dom/tag
  * @requires module:wc/dom/event
  * @requires module:wc/dom/serialize
@@ -22,8 +21,7 @@
  * @requires module:wc/ajax/setLoading
  * @requires module:wc/Observer
  */
-define(["sprintf/sprintf",
-	"wc/dom/tag",
+define(["wc/dom/tag",
 	"wc/dom/event",
 	"wc/dom/serialize",
 	"wc/dom/Widget",
@@ -35,8 +33,8 @@ define(["sprintf/sprintf",
 	"wc/timers",
 	"wc/ajax/setLoading",
 	"wc/Observer"],
-	/** @param sprintf sprintf/sprintf @param tag wc/dom/tag @param event wc/dom/event @param serialize wc/dom/serialize @param Widget wc/dom/Widget @param getAncestorOrSelf wc/dom/getAncestorOrSelf @param ajax wc/ajax/ajax@param formUpdateManager wc/dom/formUpdateManager @param has wc/has @param initialise wc/dom/initialise @param timers wc/timers @param setLoading wc/ajax/setLoading @param Observer wc/Observer @ignore*/
-	function(sprintf, tag, event, serialize, Widget, getAncestorOrSelf, ajax, formUpdateManager, has, initialise, timers, setLoading, Observer) {
+	/** @param tag wc/dom/tag @param event wc/dom/event @param serialize wc/dom/serialize @param Widget wc/dom/Widget @param getAncestorOrSelf wc/dom/getAncestorOrSelf @param ajax wc/ajax/ajax@param formUpdateManager wc/dom/formUpdateManager @param has wc/has @param initialise wc/dom/initialise @param timers wc/timers @param setLoading wc/ajax/setLoading @param Observer wc/Observer @ignore*/
+	function(tag, event, serialize, Widget, getAncestorOrSelf, ajax, formUpdateManager, has, initialise, timers, setLoading, Observer) {
 		"use strict";
 
 		var
@@ -112,9 +110,17 @@ define(["sprintf/sprintf",
 			 */
 			observer;
 
+		initialise.addInitRoutine(function() {
+			var afterCallback = function(trigger) {
+				setLoading({
+					trigger: trigger
+				}, true);
+			};
+			Trigger.subscribe(afterCallback, 1);
+		});
 		// add an early initialisation
 		initialise.addBodyListener({initialise: function () {
-			busyWd = new Widget("", "", {"aria-busy": "true"});
+			busyWd = new Widget("", "", { "aria-busy": "true" });
 			if (has("ie") && has("ie") < 10) {
 				event.add(window, event.TYPE.beforeunload,
 					/**
@@ -234,8 +240,31 @@ define(["sprintf/sprintf",
 				this.alias = (typeof obj.alias === UNDEFINED) ? null : obj.alias;
 				this.successful = (typeof obj.successful === UNDEFINED) ? null : obj.successful;
 				this.formRegion = obj.formRegion;
-				this.callback = onsuccess;
-				this.onerror = onerror;
+				this.callback = function() {
+					var scope = this, cbresult;
+					try {
+						if (onsuccess) {
+							cbresult = onsuccess.apply(scope, arguments);
+						}
+					}
+					finally {
+						// The purpose of the Promise.resolve here is to WAIT for the callback to complete, ESPECIALLY if the callback returns a promise itself
+						Promise.resolve(cbresult).then(function(result) {
+							notify(scope, "after", { success: result });
+						});
+					}
+				};
+				this.onerror = function(err) {
+					var trigger = this;
+					try {
+						if (onerror) {
+							onerror.apply(trigger, arguments);
+						}
+					}
+					finally {
+						notify(trigger, "after", { error: err });
+					}
+				};
 				this.urlFromForm = (typeof obj.urlFromForm === UNDEFINED) ? null : obj.urlFromForm;
 				this.url = (typeof obj.url === UNDEFINED) ? null : obj.url;
 				this.getData = obj.getData;
@@ -274,16 +303,74 @@ define(["sprintf/sprintf",
 
 		/**
 		 * Subscribe to profile information.
-		 * This is for use by testing / monitoring tools and does not form a core part of the functionality of this module.
-		 * The subscriber will be notified when
+		 * The first argument to the subscriber will be the firing trigger, do not modify it or its properties unless you know what you are doing.
+		 * The second will be a boolean, true if there are pending triggers, false if there are none.
 		 * @param {Function} subscriber
+		 * @param {number} [phase] Subscriber will be called:
+		 *	if phase is a negative number when a trigger is fired
+		 *	if phase is falsey then after the response is received
+		 *	if positive number then after the response callback has been called
 		 */
-		Trigger.subscribe = function (subscriber) {
+		Trigger.subscribe = function(subscriber, phase) {
+			var group = null;
+			if (phase) {
+				if (phase < 0) {
+					group = { group: "before" };
+				}
+				else {
+					group = { group: "after" };
+				}
+			}
 			if (!observer) {
 				observer = new Observer();
 			}
-			return observer.subscribe(subscriber);
+			return observer.subscribe(subscriber, group);
 		};
+
+		/**
+		 * Unsubscribe from profile information.
+		 * This is for use by testing / monitoring tools and does not form a core part of the functionality of this module.
+		 * @param {Function} subscriber
+		 * @param {number} [phase] If a negative number is provided the subscriber will be removed from the "before" phase.
+		 */
+		Trigger.unsubscribe = function(subscriber, phase) {
+			var group;
+			if (observer) {
+				if (phase) {
+					if (phase < 0) {
+						group = "before";
+					}
+					else {
+						group = "after";
+					}
+				}
+				observer.unsubscribe(subscriber, group);
+			}
+		};
+
+		/**
+		 * Related to the subscribe method above.
+		 * @param {Trigger} trigger The trigger that is firing.
+		 * @param {string} [groupName] The group to notify.
+		 * @param {object} [cbresult] The result of the trigger callback, if relevant to this phase.
+		 */
+		function notify(trigger, groupName, cbresult) {
+			var pending, proxyObj;
+			trigger.profile.received = Date.now();
+			if (observer) {
+				pending = pendingList.length > 0;
+				if (groupName) {
+					observer.setFilter(groupName);
+					if (groupName === "before") {
+						// This special case is not ideal but necessary.
+						pending = true;
+					}
+				}
+				proxyObj = Object.create(trigger);
+				proxyObj.cbresult = cbresult;
+				observer.notify(proxyObj, pending);
+			}
+		}
 
 		/**
 		 * Find the url this trigger should use when sending ajax requests. This will remove the HASH for browsers with
@@ -296,7 +383,7 @@ define(["sprintf/sprintf",
 		 *	 for finding the ajax URL.
 		 * @returns {String} The url.
 		 */
-		Trigger.getUrl = function (trigger) {
+		Trigger.getUrl = function(trigger) {
 			var url,
 				ampCheckRE	=	/\&amp;/gi,
 				fragmentRe	=	/#.+$/g;
@@ -370,7 +457,7 @@ define(["sprintf/sprintf",
 		 * @returns {module:wc/ajax/Trigger~Request[]} An array of requests which update the id. If none found will
 		 *	 return an empty array.
 		 */
-		Trigger.prototype.getTriggersFor = function (id, requests, stopAtFirstMatch) {
+		Trigger.prototype.getTriggersFor = function(id, requests, stopAtFirstMatch) {
 			var result = [],
 				len = requests.length,
 				trigger,
@@ -428,14 +515,12 @@ define(["sprintf/sprintf",
 					if (conflict.length) {
 						return false;
 					}
-					else {
-						next = document.getElementById(ids[i]);
-						if (next) {
-							busy = busyWd.findAncestor(next) || busyWd.findDescendant(next);
-							if (busy && busy !== next) {  // the element itself will ALWAYS be busy
-								// this element is contained in or contains a "busy" region
-								return false;
-							}
+					next = document.getElementById(ids[i]);
+					if (next) {
+						busy = busyWd.findAncestor(next) || busyWd.findDescendant(next);
+						if (busy && busy !== next) {  // the element itself will ALWAYS be busy
+							// this element is contained in or contains a "busy" region
+							return false;
 						}
 					}
 				}
@@ -482,38 +567,59 @@ define(["sprintf/sprintf",
 		 *
 		 * @function
 		 * @public
-		 * @returns {Boolean} true if the trigger queued a request, false if the trigger was not able to queue a request
-		 *	 (i.e. it was a oneshot trigger with no shots left). By the way, I really just put the return value in for
-		 *	 unit testing purposes...
 		 */
-		Trigger.prototype.fire = function () {
-			var result = !!this.oneShot,
+		Trigger.prototype.fire = function() {
+			var promise,
+				trigger = this,
 				endOfQueue,
 				request;
 
-			if (result) {  // will be a negative number if it is not oneshot, therefore will equate to true
-				if (this.oneShot > 0) {
-					this.oneShot--;
+			if (trigger.oneShot) {  // will be a negative number if it is not oneshot, therefore will equate to true
+				notify(trigger, "before");
+				if (trigger.oneShot > 0) {
+					trigger.oneShot--;
 				}
 				// queueRequest();
 				endOfQueue = (requestBuffer.length - 1);
-				this.profile.fired = Date.now();
-				request = new Request(this);
-				if (!requestBuffer[endOfQueue] || requestBuffer[endOfQueue].trigger.id !== this.id) {  // yes, use id for equality
+				trigger.profile.fired = Date.now();
+				request = new Request(trigger);
+				if (!requestBuffer[endOfQueue] || requestBuffer[endOfQueue].trigger.id !== trigger.id) {  // yes, use id for equality
 					requestBuffer.push(request);
 					setLoading(request);  // do this AFTER the form has been serialized (because it will disable stuff)
 				}
 				else {
 					requestBuffer[endOfQueue] = request;
-					console.log("Cancelling consecutive request for ", this.id);
+					console.log("Cancelling consecutive request for ", trigger.id);
 				}
-				this.scheduleQueueProcessing();
+				trigger.scheduleQueueProcessing();
+				promise = getFirePromise(trigger);
 			}
 			else {
-				console.info("Trigger has no more shots left", this.id);
+				promise = Promise.reject("Trigger has no more shots left: " + trigger.id);
 			}
-			return result;
+			return promise;
 		};
+
+		function getFirePromise(trigger) {
+			return new Promise(function(resolve, reject) {
+				var subscriber = function(triggerArg) {
+					var result;
+					if (triggerArg && trigger.id === triggerArg.id) {
+						Trigger.unsubscribe(subscriber, 1);
+						result = triggerArg.cbresult;
+						if (result) {
+							if (result.error) {
+								reject(result.error);
+							}
+							else {
+								resolve(result.success);
+							}
+						}
+					}
+				};
+				Trigger.subscribe(subscriber, 1);
+			});
+		}
 
 		/**
 		 * Returns the data that should be sent in the AJAX request. Includes the following:
@@ -534,7 +640,7 @@ define(["sprintf/sprintf",
 		 * @public
 		 * @returns {String} The serialized parameters or "".
 		 */
-		Trigger.prototype.getParams = function () {
+		Trigger.prototype.getParams = function() {
 			var result = "",
 				triggerId,
 				element = getElement(this);
@@ -563,7 +669,7 @@ define(["sprintf/sprintf",
 					triggerId = this.id;
 				}
 				triggerId = encodeURIComponent(triggerId);
-				result = addToQueryString(result, sprintf.sprintf("%s=%s", "${wc.ui.ajax.parameter.triggerId}", triggerId));
+				result = addToQueryString(result, "wc_ajax=" + triggerId);
 			}
 			finally {
 				this._submitTriggerElement = false;  // reset, the idea is the next click event will set to true
@@ -706,7 +812,9 @@ define(["sprintf/sprintf",
 		}
 
 		function handleResponse($self, response, trigger, isError) {
-			var idx;
+			var idx, done = function() {
+					notify(trigger);
+				};
 			console.log("Got response for trigger", trigger.id);
 			if (!unloading) {
 				try {
@@ -723,7 +831,6 @@ define(["sprintf/sprintf",
 					else {
 						console.warn("Got response for trigger that was not in pending queue", trigger.id);
 					}
-					setLoading($self, true);
 					try {
 						if (!isError) {
 							trigger.callback(response, trigger);
@@ -731,19 +838,11 @@ define(["sprintf/sprintf",
 						else if (trigger.onerror) {
 							trigger.onerror(response, trigger);
 						}
+						// Remove "aria-busy" AFTER the new content is loaded to avoid collapsing to zero pixels
+						done();
 					}
 					catch (ex) {
 						console.error(ex);
-					}
-					trigger.profile.received = Date.now();
-					if (observer) {
-						observer.notify({
-							profile: trigger.profile,
-							id: trigger.id,
-							alias: trigger.alias,
-							loads: trigger.loads,
-							url: trigger.url  // this will probably be null
-						});
 					}
 				}
 				finally {
@@ -784,6 +883,7 @@ define(["sprintf/sprintf",
 					}
 					catch (ex) {
 						pendingList.pop();  // error so assume the request is not pending - pop it off the queue
+						notify(trigger);
 						console.error(ex);
 					}
 				}

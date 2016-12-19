@@ -1,20 +1,12 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.ui.menu.n.hasStickyOpen.xsl"/>
 	<xsl:import href="wc.ui.menu.n.menuRoleIsSelectable.xsl"/>
 	<xsl:import href="wc.ui.menu.n.menuTabIndexHelper.xsl"/>
 	<xsl:import href="wc.common.disabledElement.xsl"/>
 	<xsl:import href="wc.common.accessKey.xsl"/>
+	<xsl:import href="wc.common.n.className.xsl"/>
+	<xsl:import href="wc.common.title.xsl"/>
 	<!--
-		WSubMenu is a descendant of WMenu and is used to hold WMenuItems.
-
-		HTML output
-
-		DIV (role=menuitem/menuitemradio/menuitemcheckbox/treeitem) This is the full submenu and is a menu item in the parent menu/submenu
-		    BUTTON (role=button) This is the opener and label for the submenu
-		    DIV (role=menu/group) This holds the submenu content and announces itself as the submenu
-		        transformed output of submenu content
-
-
 		Transform for WSubMenu. The submenu opener element which is part of the
 		submenu's parent element as well as a controller for and instrinsic part of the
 		submenu itself. This leads to three separate artefacts:
@@ -28,18 +20,18 @@
 	-->
 	<xsl:template match="ui:submenu">
 		<xsl:variable name="myAncestorMenu" select="ancestor::ui:menu[1]"/>
-		<xsl:variable name="myAncestorSubmenu" select="ancestor::ui:submenu[ancestor::ui:menu[1]=$myAncestorMenu or not(ancestor::ui:menu)][1]"/>
+		<xsl:variable name="myAncestorSubmenu" select="ancestor::ui:submenu[not(ancestor::ui:menu) or ancestor::ui:menu[1] eq $myAncestorMenu][1]"/>
 		<xsl:variable name="id" select="@id"/>
 		<!-- this is a test for ui:submenu in an ajax response without its context menu -->
 		<xsl:variable name="noContextMenu">
-			<xsl:if test="not($myAncestorMenu)">
-				<xsl:number value="1"/>
-			</xsl:if>
-		</xsl:variable>
-		<xsl:variable name="noContextSubMenu">
-			<xsl:if test="$noContextMenu=1 and not($myAncestorSubmenu)">
-				<xsl:number value="1"/>
-			</xsl:if>
+			<xsl:choose>
+				<xsl:when test="not($myAncestorMenu)">
+					<xsl:number value="1"/>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:number value="0"/>
+				</xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
 		<xsl:variable name="type" select="$myAncestorMenu/@type"/>
 		<xsl:variable name="stickyOpen">
@@ -57,7 +49,7 @@
 		</xsl:variable>
 		<xsl:variable name="open">
 			<xsl:choose>
-				<xsl:when test="@open and $stickyOpen=1">
+				<xsl:when test="@open and number($stickyOpen) eq 1">
 					<xsl:number value="1"/>
 				</xsl:when>
 				<xsl:otherwise>
@@ -66,10 +58,7 @@
 			</xsl:choose>
 		</xsl:variable>
 
-		<xsl:element name="div">
-			<xsl:attribute name="id">
-				<xsl:value-of select="$id"/>
-			</xsl:attribute>
+		<div id="{$id}" role="presentation">
 			<!--
 				We try not to tie functionality or display to classes when we have suitable ARIA
 				attributes but the need to differentiate functionality based on whether an
@@ -81,42 +70,13 @@
 				This <<may>> change so you should try not to rely on this class for too much and
 				certainly avoid it for automated testing.
 			-->
-			<xsl:attribute name="class">
-				<xsl:text>submenu</xsl:text>
-				<xsl:if test="@class">
-					<xsl:value-of select="concat(' ', @class)"/>
-				</xsl:if>
-			</xsl:attribute>
-			<xsl:attribute name="aria-expanded">
-				<xsl:choose>
-					<xsl:when test="$open=1">
-						<xsl:copy-of select="$t"/>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:text>false</xsl:text>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:attribute>
-			<xsl:if test="@selectMode and not($type='tree')">
+			<xsl:call-template name="hideElementIfHiddenSet"/>
+			<xsl:call-template name="makeCommonClass"/>
+			<xsl:if test="@selectMode">
 				<xsl:attribute name="data-wc-selectmode">
 					<xsl:value-of select="@selectMode"/>
 				</xsl:attribute>
 			</xsl:if>
-			<xsl:call-template name="hideElementIfHiddenSet"/>
-
-			<xsl:attribute name="role">
-				<xsl:choose>
-					<xsl:when test="$type='tree'"><!-- this will only be met if we can get to the ancestor menu -->
-						<xsl:text>treeitem</xsl:text>
-					</xsl:when>
-					<xsl:when test="$myAncestorMenu">
-						<xsl:text>menuitem</xsl:text>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:text>${wc.ui.menu.dummyRole}</xsl:text>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:attribute>
 			<!--
 				Determination of disabled state
 
@@ -135,43 +95,25 @@
 			-->
 			<xsl:variable name="this" select="."/>
 			<xsl:variable name="disabledAncestor" select="ancestor-or-self::*[@disabled and
-									(self::ui:submenu[.=$this] or
-									($myAncestorMenu and (self::ui:menu[.=$myAncestorMenu] or self::ui:submenu[ancestor::ui:menu[1]=$myAncestorMenu])) or
-									($noContextMenu=1 and self::ui:submenu))]"/>
+									(self::ui:submenu[. eq $this] or
+									($myAncestorMenu and 
+										(self::ui:menu[. eq $myAncestorMenu] or 
+										self::ui:submenu[ancestor::ui:menu[1] eq $myAncestorMenu])) or
+									(number($noContextMenu) eq 1 and self::ui:submenu))]"/>
 			<xsl:if test="$disabledAncestor">
 				<xsl:call-template name="disabledElement">
 					<xsl:with-param name="field" select="$disabledAncestor"/>
 				</xsl:call-template>
 			</xsl:if>
 			<!-- This is the submenu opener/label element. -->
-			<xsl:element name="button">
-				<xsl:attribute name="type">
-					<xsl:text>button</xsl:text>
+			<button type="button" id="{concat($id, '_o')}" name="{$id}" class="wc-nobutton wc-invite wc-submenu-o" aria-controls="{$id}" aria-haspopup="true">
+				<xsl:attribute name="aria-pressed">
+					<xsl:choose>
+						<xsl:when test="number($open) eq 1">true</xsl:when>
+						<xsl:otherwise>false</xsl:otherwise>
+					</xsl:choose>
 				</xsl:attribute>
-				<xsl:attribute name="id">
-					<xsl:value-of select="$id"/>
-					<xsl:text>${wc.ui.menu.submenu.openerIdSuffix}</xsl:text>
-				</xsl:attribute>
-				<xsl:if test="not($type='tree')">
-					<xsl:attribute name="aria-haspopup">
-						<xsl:copy-of select="$t"/>
-					</xsl:attribute>
-				</xsl:if>
-				<xsl:attribute name="name">
-					<xsl:value-of select="$id"/>
-				</xsl:attribute>
-				<xsl:attribute name="class">
-					<xsl:text>wc_btn_nada</xsl:text>
-				</xsl:attribute>
-				<xsl:if test="@toolTip">
-					<xsl:attribute name="title">
-						<xsl:value-of select="normalize-space(@toolTip)"/>
-					</xsl:attribute>
-				</xsl:if>
-				<!-- This is the submenu content which is controlled by the submenu -->
-				<xsl:attribute name="aria-controls">
-					<xsl:value-of select="ui:content/@id"/>
-				</xsl:attribute>
+				<xsl:call-template name="title"/>
 				<!-- see above for how we determine disabled state: it is ugly -->
 				<xsl:if test="$disabledAncestor">
 					<xsl:call-template name="disabledElement">
@@ -186,7 +128,7 @@
 								<xsl:with-param name="menu" select="$myAncestorMenu"/>
 							</xsl:call-template>
 						</xsl:variable>
-						<xsl:if test="$tabindex!=''">
+						<xsl:if test="$tabindex ne ''">
 							<xsl:attribute name="tabindex">
 								<xsl:value-of select="$tabindex"/>
 							</xsl:attribute>
@@ -203,11 +145,12 @@
 						</xsl:attribute>
 					</xsl:otherwise>
 				</xsl:choose>
-				<xsl:apply-templates select="ui:decoratedLabel"/>
-			</xsl:element>
+				<xsl:apply-templates select="ui:decoratedlabel"/>
+			</button>
 			<xsl:apply-templates select="ui:content" mode="submenu">
 				<xsl:with-param name="open" select="$open"/>
+				<xsl:with-param name="type" select="$type"/>
 			</xsl:apply-templates>
-		</xsl:element>
+		</div>
 	</xsl:template>
 </xsl:stylesheet>

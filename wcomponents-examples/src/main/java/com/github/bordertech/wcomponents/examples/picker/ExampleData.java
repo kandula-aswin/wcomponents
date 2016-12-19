@@ -8,6 +8,7 @@ import com.github.bordertech.wcomponents.examples.ButtonOptionsExample;
 import com.github.bordertech.wcomponents.examples.EntryFieldExample;
 import com.github.bordertech.wcomponents.examples.ErrorGenerator;
 import com.github.bordertech.wcomponents.examples.ForwardExample;
+import com.github.bordertech.wcomponents.examples.HtmlClassPropertiesExample;
 import com.github.bordertech.wcomponents.examples.HtmlInjector;
 import com.github.bordertech.wcomponents.examples.I18nExample;
 import com.github.bordertech.wcomponents.examples.InfoDump;
@@ -48,21 +49,26 @@ import com.github.bordertech.wcomponents.examples.WImageExample;
 import com.github.bordertech.wcomponents.examples.WLinkActionExample;
 import com.github.bordertech.wcomponents.examples.WMultiFileWidgetAjaxExample;
 import com.github.bordertech.wcomponents.examples.WMultiSelectExample;
+import com.github.bordertech.wcomponents.examples.WNumberFieldExample;
 import com.github.bordertech.wcomponents.examples.WPanelExample;
+import com.github.bordertech.wcomponents.examples.WPasswordFieldExample;
 import com.github.bordertech.wcomponents.examples.WPopupExample;
 import com.github.bordertech.wcomponents.examples.WRadioButtonInRepeater;
 import com.github.bordertech.wcomponents.examples.WRadioButtonTriggerActionExample;
 import com.github.bordertech.wcomponents.examples.WSectionExample;
-import com.github.bordertech.wcomponents.examples.WSessionExample;
 import com.github.bordertech.wcomponents.examples.WShufflerExample;
 import com.github.bordertech.wcomponents.examples.WSingleSelectExample;
 import com.github.bordertech.wcomponents.examples.WSkipLinksExample;
+import com.github.bordertech.wcomponents.examples.WStyledTextFontAwesomeExample;
 import com.github.bordertech.wcomponents.examples.WStyledTextOptionsExample;
 import com.github.bordertech.wcomponents.examples.WSuggestionsExample;
+import com.github.bordertech.wcomponents.examples.WTemplateExample;
 import com.github.bordertech.wcomponents.examples.WTextExample;
+import com.github.bordertech.wcomponents.examples.WTextFieldExample;
 import com.github.bordertech.wcomponents.examples.WTimeoutWarningDefaultExample;
 import com.github.bordertech.wcomponents.examples.WTimeoutWarningExample;
 import com.github.bordertech.wcomponents.examples.WTimeoutWarningOptionsExample;
+import com.github.bordertech.wcomponents.examples.WTreeExample;
 import com.github.bordertech.wcomponents.examples.WVideoExample;
 import com.github.bordertech.wcomponents.examples.WWindowExample;
 import com.github.bordertech.wcomponents.examples.WhiteSpaceExample;
@@ -88,6 +94,7 @@ import com.github.bordertech.wcomponents.examples.menu.MenuBarExample;
 import com.github.bordertech.wcomponents.examples.menu.MenuFlyoutExample;
 import com.github.bordertech.wcomponents.examples.menu.MenuItemActionMessagesExample;
 import com.github.bordertech.wcomponents.examples.menu.TreeMenuExample;
+import com.github.bordertech.wcomponents.examples.othersys.LinkExamples;
 import com.github.bordertech.wcomponents.examples.repeater.RepeaterExample;
 import com.github.bordertech.wcomponents.examples.repeater.RepeaterExampleWithEditableRows;
 import com.github.bordertech.wcomponents.examples.repeater.link.RepeaterLinkExample;
@@ -119,6 +126,8 @@ import com.github.bordertech.wcomponents.examples.table.TableContentExample;
 import com.github.bordertech.wcomponents.examples.table.TableExpandableContentModelExample;
 import com.github.bordertech.wcomponents.examples.table.TableRowEditingAjaxExample;
 import com.github.bordertech.wcomponents.examples.table.TableScrollableModelExample;
+import com.github.bordertech.wcomponents.examples.table.WTableColumnAlignmentExample;
+import com.github.bordertech.wcomponents.examples.table.WTableColumnWidthExample;
 import com.github.bordertech.wcomponents.examples.table.WTableExample;
 import com.github.bordertech.wcomponents.examples.table.WTableOptionsExample;
 import com.github.bordertech.wcomponents.examples.theme.AccessKeyExample;
@@ -129,7 +138,6 @@ import com.github.bordertech.wcomponents.examples.theme.WCheckBoxExample;
 import com.github.bordertech.wcomponents.examples.theme.WCheckBoxSelectExample;
 import com.github.bordertech.wcomponents.examples.theme.WCollapsibleExample;
 import com.github.bordertech.wcomponents.examples.theme.WCollapsibleGroupExample;
-import com.github.bordertech.wcomponents.examples.theme.WColumnLayoutExample;
 import com.github.bordertech.wcomponents.examples.theme.WConfirmationButtonExample;
 import com.github.bordertech.wcomponents.examples.theme.WDateFieldExample;
 import com.github.bordertech.wcomponents.examples.theme.WEmailFieldExample;
@@ -161,6 +169,7 @@ import com.github.bordertech.wcomponents.examples.theme.WTabAndCollapsibleExampl
 import com.github.bordertech.wcomponents.examples.theme.WTabExample;
 import com.github.bordertech.wcomponents.examples.theme.WTabSetExample;
 import com.github.bordertech.wcomponents.examples.theme.WTabSetTriggerActionExample;
+import com.github.bordertech.wcomponents.examples.theme.WToggleButtonExample;
 import com.github.bordertech.wcomponents.examples.theme.ajax.AjaxPollingWButtonExample;
 import com.github.bordertech.wcomponents.examples.theme.ajax.AjaxReplaceControllerExample;
 import com.github.bordertech.wcomponents.examples.theme.ajax.AjaxWButtonExample;
@@ -176,7 +185,6 @@ import com.github.bordertech.wcomponents.examples.validation.ValidationExamples;
 import com.github.bordertech.wcomponents.examples.validation.basic.BasicDiagnosticComponentExample;
 import com.github.bordertech.wcomponents.examples.validation.basic.BasicFieldsValidationExample2;
 import com.github.bordertech.wcomponents.examples.validation.fields.FieldValidation;
-import com.github.bordertech.wcomponents.examples.othersys.LinkExamples;
 import com.github.bordertech.wcomponents.util.Util;
 import java.io.Serializable;
 
@@ -204,8 +212,11 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Lazy Panel", AjaxWPanelExample.class),
 		new ExampleData("RadioButtonSelect", AjaxWRadioButtonSelectExample.class),
 		new ExampleData("Repeater", AjaxWRepeaterExample.class),
+		new ExampleData("Suggestions", WSuggestionsExample.class),
+		new ExampleData("WDataListServer", WDataListServletExample.class),
 		new ExampleData("Multi pollers", MultiPollingExample.class),
-		new ExampleData("Suggestions", WSuggestionsExample.class)
+		new ExampleData("Load AJAX controls via AJAX", LoadAjaxControlsExample.class),
+		new ExampleData("Ajax controllers replaced via ajax", AjaxReplaceControllerExample.class)
 	};
 
 	/**
@@ -216,41 +227,45 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Button", WButtonExample.class),
 		new ExampleData("Button action example", WButtonActionExample.class),
 		new ExampleData("Button configuration options", ButtonOptionsExample.class),
-		new ExampleData("WButton default submit", WButtonDefaultSubmitExample.class),
+		new ExampleData("Button default submit", WButtonDefaultSubmitExample.class),
 		new ExampleData("Cancel button", WCancelButtonExample.class),
-		new ExampleData("WCheckBox", WCheckBoxExample.class),
+		new ExampleData("CheckBox", WCheckBoxExample.class),
 		new ExampleData("Checkbox (action on change)", WCheckBoxTriggerActionExample.class),
-		new ExampleData("WCheckBoxSelect", WCheckBoxSelectExample.class),
+		new ExampleData("CheckBoxSelect", WCheckBoxSelectExample.class),
 		new ExampleData("Confirmation button", WConfirmationButtonExample.class),
 		new ExampleData("Date field", WDateFieldExample.class),
 		new ExampleData("Dropdown", WDropdownExample.class),
 		new ExampleData("Dropdown (action on change)", WDropdownTriggerActionExample.class),
 		new ExampleData("Dropdown (submit on change)", WDropdownSubmitOnChangeExample.class),
 		new ExampleData("Dropdown (space handling)", WDropdownSpaceHandlingExample.class),
-		new ExampleData("Dropdown (special char handling)",
-		WDropdownSpecialCharHandlingExample.class),
+		new ExampleData("Dropdown (special char handling)", WDropdownSpecialCharHandlingExample.class),
 		new ExampleData("Dropdown configuration options", WDropdownOptionsExample.class),
 		new ExampleData("Email field", WEmailFieldExample.class),
-		new ExampleData("Simple File upload", SimpleFileUpload.class),
+		new ExampleData("File upload (simple)", SimpleFileUpload.class),
 		new ExampleData("Labels", WLabelExample.class),
 		new ExampleData("Multi-dropdown", WMultiDropdownExample.class),
-		new ExampleData("Multi Select", WMultiSelectExample.class),
 		new ExampleData("Multi-file upload", WMultiFileWidgetExample.class),
 		new ExampleData("Multi-file ajax", WMultiFileWidgetAjaxExample.class),
+		new ExampleData("Multi Select", WMultiSelectExample.class),
 		new ExampleData("Multi-select pair", WMultiSelectPairExample.class),
 		new ExampleData("Multi-text field", WMultiTextFieldExample.class),
+		new ExampleData("Number Field", WNumberFieldExample.class),
 		new ExampleData("Partial date field", WPartialDateFieldExample.class),
+		new ExampleData("WPasswordField", WPasswordFieldExample.class),
 		new ExampleData("Phone Number Field", WPhoneNumberFieldExample.class),
-		new ExampleData("WRadioButton", WRadioButtonExample.class),
-		new ExampleData("Radiobutton (action on change)", WRadioButtonTriggerActionExample.class),
-		new ExampleData("Radiobutton in a repeater", WRadioButtonInRepeater.class),
-		new ExampleData("Radiobutton select", WRadioButtonSelectExample.class),
+		new ExampleData("RadioButton", WRadioButtonExample.class),
+		new ExampleData("RadioButton (action on change)", WRadioButtonTriggerActionExample.class),
+		new ExampleData("RadioButton in a repeater", WRadioButtonInRepeater.class),
+		new ExampleData("RadioButtonSelect", WRadioButtonSelectExample.class),
+		new ExampleData("Select toggle", WSelectToggleExample.class),
+		new ExampleData("Shuffler", WShufflerExample.class),
+		new ExampleData("Simple Cancel Button", SimpleCancelButtonExample.class),
 		new ExampleData("Single Select", WSingleSelectExample.class),
 		new ExampleData("Text Area", TextAreaExample.class),
 		new ExampleData("Text Field", TextFieldExample.class),
-		new ExampleData("Select toggle", WSelectToggleExample.class),
-		new ExampleData("Shuffler", WShufflerExample.class),
-		new ExampleData("Simple Cancel Button", SimpleCancelButtonExample.class)
+		new ExampleData("WTextField", WTextFieldExample.class),
+		new ExampleData("Toggle Button", WToggleButtonExample.class),
+		new ExampleData("Tree", WTreeExample.class)
 	};
 
 	/**
@@ -260,17 +275,21 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Abbreviations", WAbbrTextExample.class),
 		new ExampleData("Access keys", AccessKeyExample.class),
 		new ExampleData("Audio", WAudioExample.class),
+		new ExampleData("Dynamic images", WImageCachedExample.class),
+		new ExampleData("Figure", WFigureExample.class),
 		new ExampleData("Headings", WHeadingExample.class),
 		new ExampleData("Images", WImageExample.class),
 		new ExampleData("Message Box", WMessageBoxExample.class),
 		new ExampleData("Messages", WMessagesExample.class),
 		new ExampleData("Progress bar", WProgressBarExample.class),
+		new ExampleData("Styled Text options", WStyledTextOptionsExample.class),
+		new ExampleData("Icons with WStyledText", WStyledTextFontAwesomeExample.class),
+		new ExampleData("HTML class properties", HtmlClassPropertiesExample.class),
 		new ExampleData("Text", WTextExample.class),
-		new ExampleData("Video", WVideoExample.class),
-		new ExampleData("Session timeout", WSessionExample.class),
-		new ExampleData("WTimeoutWarning", WTimeoutWarningExample.class),
-		new ExampleData("WTimeoutWarning default options", WTimeoutWarningDefaultExample.class),
-		new ExampleData("WTimeoutWarning options", WTimeoutWarningOptionsExample.class)
+		new ExampleData("Timeout Warning", WTimeoutWarningExample.class),
+		new ExampleData("Timeout Warning default options", WTimeoutWarningDefaultExample.class),
+		new ExampleData("TimeoutWarning options", WTimeoutWarningOptionsExample.class),
+		new ExampleData("Video", WVideoExample.class)
 	};
 
 	/**
@@ -280,8 +299,7 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Basic WDataTable", WDataTableExample.class),
 		new ExampleData("Table with row selection", SelectableDataTableExample.class),
 		new ExampleData("Editable table", SimpleEditableDataTableExample.class),
-		new ExampleData("Editable table with per-cell editability",
-		SimpleRowEditingTableExample.class),
+		new ExampleData("Editable table with per-cell editability", SimpleRowEditingTableExample.class),
 		new ExampleData("Table cell action", TableCellWithActionExample.class),
 		new ExampleData("Data Table (bean)", DataTableBeanExample.class),
 		new ExampleData("Tree table", TreeTableExample.class),
@@ -300,8 +318,7 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Simple expandable", SimpleExpandableTableExample.class),
 		new ExampleData("Simple expandable content", SimpleExpandableContentTableExample.class),
 		new ExampleData("Simple pagination", SimplePaginationTableExample.class),
-		new ExampleData("Simple pagination with row options",
-		SimplePaginationWithRowOptionsTableExample.class),
+		new ExampleData("Simple pagination with row options", SimplePaginationWithRowOptionsTableExample.class),
 		new ExampleData("Simple selectable", SimpleSelectableTableExample.class),
 		new ExampleData("Simple sorting", SimpleSortingTableExample.class),
 		new ExampleData("Table using a bean provider", TableBeanProviderExample.class),
@@ -311,7 +328,9 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Advanced cell editting with AJAX", TableRowEditingAjaxExample.class),
 		new ExampleData("Options example", WTableOptionsExample.class),
 		new ExampleData("Filtering example", FilterableTableExample.class),
-		new ExampleData("WTable Cell with image content ", TableContentExample.class)
+		new ExampleData("WTable Cell with image content ", TableContentExample.class),
+		new ExampleData("Simple Column Width", WTableColumnWidthExample.class),
+		new ExampleData("Simple Column Alignment", WTableColumnAlignmentExample.class)
 	};
 
 	/**
@@ -328,8 +347,6 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Forward example", ForwardExample.class),
 		new ExampleData("Html injector", HtmlInjector.class),
 		new ExampleData("InfoDump", InfoDump.class),
-		new ExampleData("Load AJAX controls via AJAX", LoadAjaxControlsExample.class),
-		new ExampleData("Ajax controllers replaced via ajax", AjaxReplaceControllerExample.class),
 		new ExampleData("Internationalisation", I18nExample.class),
 		new ExampleData("Kitchen sink", KitchenSink.class),
 		new ExampleData("Pattern validation", PatternValidationExample.class),
@@ -339,12 +356,9 @@ public final class ExampleData implements Serializable {
 		new ExampleData("Text duplicator (Velocity2)", TextDuplicatorVelocity2.class),
 		new ExampleData("WApplication", WApplicationExample.class),
 		new ExampleData("WContent", WContentExample.class),
-		new ExampleData("WDataListServer", WDataListServletExample.class),
 		new ExampleData("WHiddenComment", WHiddenCommentExample.class),
 		new ExampleData("Input bean binding", InputBeanBindingExample.class),
-		new ExampleData("White space example", WhiteSpaceExample.class),
-		new ExampleData("WStyledText options", WStyledTextOptionsExample.class),
-		new ExampleData("Dynamic images", WImageCachedExample.class)
+		new ExampleData("White space example", WhiteSpaceExample.class)
 	};
 
 	/**
@@ -379,20 +393,19 @@ public final class ExampleData implements Serializable {
 		new ExampleData("List layout", ListLayoutExample.class),
 		new ExampleData("List layout options", ListLayoutOptionExample.class),
 		new ExampleData("Margins", MarginExample.class),
-		new ExampleData("WCollapsible", WCollapsibleExample.class),
-		new ExampleData("WCollapsible group", WCollapsibleGroupExample.class),
-		new ExampleData("WColumnLayout", WColumnLayoutExample.class),
-		new ExampleData("WDefinitionList", WDefinitionListExample.class),
-		new ExampleData("WFieldLayout", WFieldLayoutExample.class),
-		new ExampleData("WField nested", WFieldNestedExample.class),
-		new ExampleData("WFieldSet", WFieldSetExample.class),
-		new ExampleData("WList", WListExample.class),
-		new ExampleData("WList configuration options", WListOptionsExample.class),
-		new ExampleData("WPanel margins", WPanelMarginExample.class),
-		new ExampleData("WPanel types", WPanelExample.class),
+		new ExampleData("Collapsible", WCollapsibleExample.class),
+		new ExampleData("Collapsible group", WCollapsibleGroupExample.class),
+		new ExampleData("Definition List", WDefinitionListExample.class),
+		new ExampleData("Field Layout", WFieldLayoutExample.class),
+		new ExampleData("Field nested", WFieldNestedExample.class),
+		new ExampleData("FieldSet", WFieldSetExample.class),
+		new ExampleData("List", WListExample.class),
+		new ExampleData("List configuration options", WListOptionsExample.class),
+		new ExampleData("Panel margins", WPanelMarginExample.class),
+		new ExampleData("Panel types", WPanelExample.class),
 		new ExampleData("Panel dynamic type", WPanelTypeExample.class),
-		new ExampleData("WSection", WSectionExample.class),
-		new ExampleData("WFigure", WFigureExample.class)
+		new ExampleData("Section", WSectionExample.class),
+		new ExampleData("Template", WTemplateExample.class)
 	};
 
 	/**
@@ -408,10 +421,10 @@ public final class ExampleData implements Serializable {
 	 * Menu examples.
 	 */
 	public static final ExampleData[] MENU_EXAMPLES = new ExampleData[]{
-		new ExampleData("Menu bar", MenuBarExample.class),
-		new ExampleData("Tree menu", TreeMenuExample.class),
+		new ExampleData("Bar Menu", MenuBarExample.class),
 		new ExampleData("Column menu", ColumnMenuExample.class),
 		new ExampleData("Flyout menu", MenuFlyoutExample.class),
+		new ExampleData("Tree menu", TreeMenuExample.class),
 		new ExampleData("Menu action messages", MenuItemActionMessagesExample.class),
 		new ExampleData("Menu Select Mode", WMenuSelectModeExample.class)
 	};

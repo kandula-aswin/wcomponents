@@ -7,11 +7,13 @@
  *
  * @module
  * @requires module:wc/dom/initialise
+ * @requires module:wc/config
+ * @requires module:wc/loader/style
+ * @requires module:wc/mixin
  * @requires external:tinyMCE
  */
-define(["wc/dom/initialise", "tinyMCE", "module"],
-	/** @param initialise wc/dom/initialise @param tinyMCE tinyMCE @param module @ignore */
-	function(initialise, tinyMCE, module) {
+define(["wc/dom/initialise", "wc/config", "wc/loader/style", "wc/mixin", "tinyMCE"],
+	function(initialise, wcconfig, styleLoader, mixin, tinyMCE) {
 		"use strict";
 
 		/**
@@ -22,12 +24,26 @@ define(["wc/dom/initialise", "tinyMCE", "module"],
 		 * @param {String[]} idArr An array of RTF ids.
 		 */
 		function processNow(idArr) {
-			var id, initObj = {};
-			if (module && module.config()) {
-				initObj = module.config().initObj || {};
+			var id,
+				initObj = {
+					content_css: styleLoader.getMainCss(true),
+					plugins: "autolink link image lists print preview paste"
+				},
+				config = wcconfig.get("wc/ui/rtf"),
+				setupFunc = function (editor) {
+					editor.on("change", function () {
+						editor.save();
+					});
+				};
+			if (config && config.initObj) {
+				mixin(config.initObj, initObj);  // config values overwrite defaults coded here.
 			}
+
 			while ((id = idArr.shift())) {
 				initObj["selector"] = "textarea#" + id;
+				if (!initObj["setup"]) {
+					initObj["setup"] = setupFunc;
+				}
 				tinyMCE.init(initObj);
 			}
 		}

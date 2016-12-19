@@ -1,25 +1,17 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
+	<xsl:import href="wc.common.n.className.xsl"/>
 	<!--
-		Make an abbr element. If the component does not have a description make
-		a span because an abbr without a title is worse than useless.
-
-		If the ui:abbr has no content do not output anything.
+		Make an abbr element.
 	-->
 	<xsl:template match="ui:abbr">
-		<xsl:if test="text()">
-			<xsl:choose>
-				<xsl:when test="@toolTip">
-					<xsl:element name="abbr">
-						<xsl:attribute name="title">
-							<xsl:value-of select="@toolTip"/>
-						</xsl:attribute>
-						<xsl:value-of select="."/>
-					</xsl:element>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:value-of select="."/>
-				</xsl:otherwise>
-			</xsl:choose>
-		</xsl:if>
+		<abbr>
+			<xsl:call-template name="makeCommonClass"/>
+			<xsl:if test="@toolTip">
+				<xsl:attribute name="title">
+					<xsl:value-of select="@toolTip"/>
+				</xsl:attribute>
+			</xsl:if>
+			<xsl:value-of select="."/>
+		</abbr>
 	</xsl:template>
 </xsl:stylesheet>

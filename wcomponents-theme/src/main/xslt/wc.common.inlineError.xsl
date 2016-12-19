@@ -1,4 +1,4 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="1.0">
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ui="https://github.com/bordertech/wcomponents/namespace/ui/v1.0" xmlns:html="http://www.w3.org/1999/xhtml" version="2.0">
 	<xsl:import href="wc.constants.xsl"/>
 	<!--
 		Templates for marking up errors and invalid components. This template must
@@ -35,15 +35,9 @@
 		<xsl:param name="errors"/>
 		<xsl:param name="id" select="@id"/>
 		<xsl:if test="$errors">
-			<xsl:element name="ul">
-				<xsl:attribute name="class">
-					<xsl:text>error</xsl:text>
-				</xsl:attribute>
-				<xsl:attribute name="id">
-					<xsl:value-of select="concat($id,'${wc.ui.messageBox.id.inlineErrorBox.suffix}')"/>
-				</xsl:attribute>
+			<span id="{concat($id,'_err')}" class="wc-fieldindicator wc-fieldindicator-type-error wc_list_nb">
 				<xsl:apply-templates select="$errors" mode="inline"/>
-			</xsl:element>
+			</span>
 		</xsl:if>
 	</xsl:template>
 </xsl:stylesheet>

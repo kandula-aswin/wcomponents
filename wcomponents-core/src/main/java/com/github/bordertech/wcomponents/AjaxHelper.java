@@ -35,6 +35,15 @@ public final class AjaxHelper {
 	}
 
 	/**
+	 * Clear the registered AJAX operations.
+	 *
+	 * @param request the current request being responded to.
+	 */
+	public static void clearAllRegisteredOperations(final Request request) {
+		request.setSessionAttribute(AJAX_OPERATIONS_SESSION_KEY, null);
+	}
+
+	/**
 	 * @param trigger the AJAX trigger to check
 	 * @return true if this is the current AJAX trigger
 	 */
@@ -121,20 +130,6 @@ public final class AjaxHelper {
 	}
 
 	/**
-	 * Registers a single component as being AJAX capable and target itself.
-	 *
-	 * @param triggerId the component to register. The component will be re-painted when the trigger occurs.
-	 * @param request the current request being responded to.
-	 * @return the AjaxOperation control configuration object.
-	 */
-	public static AjaxOperation registerComponentTargetItself(final String triggerId,
-			final Request request) {
-		AjaxOperation operation = new AjaxOperation(triggerId, triggerId);
-		registerAjaxOperation(operation, request);
-		return operation;
-	}
-
-	/**
 	 * This internal method is used to register an arbitrary target container. It must only used by components which
 	 * contain implicit AJAX capability.
 	 *
@@ -148,6 +143,7 @@ public final class AjaxHelper {
 			final String containerContentId, final Request request) {
 		AjaxOperation operation = new AjaxOperation(triggerId, containerContentId);
 		operation.setTargetContainerId(containerId);
+		operation.setAction(AjaxOperation.AjaxAction.REPLACE_CONTENT);
 		registerAjaxOperation(operation, request);
 
 		return operation;
@@ -167,6 +163,7 @@ public final class AjaxHelper {
 			final List<String> containerContentIds, final Request request) {
 		AjaxOperation operation = new AjaxOperation(triggerId, containerContentIds);
 		operation.setTargetContainerId(containerId);
+		operation.setAction(AjaxOperation.AjaxAction.REPLACE_CONTENT);
 		registerAjaxOperation(operation, request);
 
 		return operation;

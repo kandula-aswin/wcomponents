@@ -11,6 +11,7 @@ import com.github.bordertech.wcomponents.WLabel;
 import com.github.bordertech.wcomponents.WTextField;
 import com.github.bordertech.wcomponents.WebComponent;
 import com.github.bordertech.wcomponents.util.Config;
+import com.github.bordertech.wcomponents.util.ConfigurationProperties;
 import com.github.bordertech.wcomponents.util.mock.MockRequest;
 import com.github.bordertech.wcomponents.util.mock.MockResponse;
 import java.io.IOException;
@@ -38,8 +39,8 @@ public class AbstractContainerHelper_Test {
 
 		// Want to test with "emulated clustering"
 		Configuration config = Config.copyConfiguration(originalConfig);
-		config.setProperty("bordertech.wcomponents.developer.clusterEmulation.enabled", "true");
-		config.setProperty(AbstractContainerHelper.DEVELOPER_MODE_ERROR_HANDLING, true);
+		config.setProperty(ConfigurationProperties.DEVELOPER_MODE_CLUSTER_EMULATION, "true");
+		config.setProperty(ConfigurationProperties.DEVELOPER_MODE_ERROR_HANDLING, true);
 
 		Config.setConfiguration(config);
 	}
@@ -161,8 +162,6 @@ public class AbstractContainerHelper_Test {
 
 		helper.render();
 		Assert.assertTrue("Helper should be disposed after render", helper.isDisposed());
-		// TODO: Remove the use of Escape. This test no longer works (22/9/2009).
-		//assertTrue("Escape should have been called during render phase", escape.escapeCalled);
 	}
 
 	@Test

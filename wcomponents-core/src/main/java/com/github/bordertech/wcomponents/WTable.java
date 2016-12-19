@@ -44,7 +44,7 @@ import org.apache.commons.logging.LogFactory;
  * @author Jonathan Austin
  * @since 1.0.0
  */
-public class WTable extends WBeanComponent implements Container, AjaxTarget, SubordinateTarget,
+public class WTable extends WBeanComponent implements Container, AjaxInternalTrigger, AjaxTarget, SubordinateTarget,
 		Marginable, NamingContextable {
 
 	/**
@@ -146,6 +146,28 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 		 * Indicates that pagination occurs via AJAX calls to the server.
 		 */
 		DYNAMIC
+	};
+
+	/**
+	 * This is used to control where in the table the pagination controls appear.
+	 */
+	public enum PaginationLocation {
+		/**
+		 * Indicates that pagination controls appear in a location determined solely by the theme.
+		 */
+		AUTO,
+		/**
+		 * Indicates the pagination controls appear at the top of the table.
+		 */
+		TOP,
+		/**
+		 * Indicates the pagination controls appear at the bottom of the table.
+		 */
+		BOTTOM,
+		/**
+		 * Indicates that the pagination controls should be placed both at the top and at the bottom of the table.
+		 */
+		BOTH
 	};
 
 	/**
@@ -489,6 +511,25 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	}
 
 	/**
+	 * Sets whether the de/selection of a row with sub rows should de/select the sub rows. This is a client-side only
+	 * feature.
+	 *
+	 * @param toggleSubRowSelection true to turn on this feature.
+	 */
+	public void setToggleSubRowSelection(final boolean toggleSubRowSelection) {
+		getOrCreateComponentModel().toggleSubRowSelection = toggleSubRowSelection;
+	}
+
+	/**
+	 * Indicates whether de/selecting a row with sub row(s) will de/select the sub row(s).
+	 *
+	 * @return true if this feature is enabled.
+	 */
+	public boolean isToggleSubRowSelection() {
+		return getComponentModel().toggleSubRowSelection;
+	}
+
+	/**
 	 * @return the striping type used to highlight alternate rows or columns
 	 */
 	public StripingType getStripingType() {
@@ -556,6 +597,8 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 
 	/**
 	 * @return the table summary text.
+	 * @deprecated the summary field has been removed from the client side. API preserved temporarily for backwards
+	 * compatibility.
 	 */
 	public String getSummary() {
 		return I18nUtilities.format(null, getComponentModel().summary);
@@ -565,6 +608,8 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	 * Sets the table summary text.
 	 *
 	 * @param summary the table summary text to set.
+	 * @deprecated the summary field has been removed from the client side. API preserved temporarily for backwards
+	 * compatibility.
 	 */
 	public void setSummary(final String summary) {
 		getOrCreateComponentModel().summary = summary;
@@ -735,6 +780,22 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	}
 
 	/**
+	 * @return the location for the pagination controls
+	 */
+	public PaginationLocation getPaginationLocation() {
+		return getComponentModel().paginationLocation;
+	}
+
+	/**
+	 * Sets the location in the table to show the pagination controls.
+	 *
+	 * @param location the PaginationLocation to set.
+	 */
+	public void setPaginationLocation(final PaginationLocation location) {
+		getOrCreateComponentModel().paginationLocation = location == null ? PaginationLocation.AUTO : location;
+	}
+
+	/**
 	 * @return the row selection mode.
 	 */
 	public SelectMode getSelectMode() {
@@ -848,6 +909,22 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	 */
 	public boolean isExpandAll() {
 		return getComponentModel().expandAll;
+	}
+
+	/**
+	 * Set the table as having row headers.
+	 *
+	 * @param rowHeaders indicates that the first data column in the table should be considered a row header.
+	 */
+	public void setRowHeaders(final boolean rowHeaders) {
+		getOrCreateComponentModel().rowHeaders = rowHeaders;
+	}
+
+	/**
+	 * @return is the first data column a row header column?
+	 */
+	public boolean isRowHeaders() {
+		return getComponentModel().rowHeaders;
 	}
 
 	/**
@@ -1429,23 +1506,6 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	}
 
 	/**
-	 * Override preparePaint to register an AJAX operation if necessary.
-	 *
-	 * @param request the request being responded to.
-	 */
-	@Override
-	protected void preparePaintComponent(final Request request) {
-		super.preparePaintComponent(request);
-
-		if (getRowsPerPageOptions() != null || PaginationMode.DYNAMIC.equals(getPaginationMode()) || SortMode.DYNAMIC.
-				equals(getSortMode())
-				|| ExpandMode.DYNAMIC.equals(getExpandMode()) || ExpandMode.LAZY.equals(
-				getExpandMode())) {
-			AjaxHelper.registerComponentTargetItself(getId(), request);
-		}
-	}
-
-	/**
 	 * Method to call when the model data has changed. For example, when a row has been added or removed.
 	 * <p>
 	 * Handles resorting the data (if table sorted) and making sure the table pagination is still correct.
@@ -1896,6 +1956,9 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 
 		/**
 		 * The table summary text.
+		 *
+		 * @deprecated the summary field has been removed from the client side. API preserved temporarily for backwards
+		 * compatibility.
 		 */
 		private String summary;
 
@@ -1935,6 +1998,11 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 		 */
 		private int currentPage;
 
+		/**
+		 * Stores the location to show the pagination controls.
+		 */
+		private PaginationLocation paginationLocation = PaginationLocation.AUTO;
+
 		// Selection
 		/**
 		 * Indicates how row selection should function.
@@ -1950,6 +2018,11 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 		 * Holds the keys of the currently selected rows.
 		 */
 		private Set<?> selectedRows;
+
+		/**
+		 * Indicates that de/selecting a row with sub rows will de/select the sub rows.
+		 */
+		private boolean toggleSubRowSelection = false;
 
 		// Row expansion
 		/**
@@ -1998,6 +2071,11 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 		 * mode of sorting.
 		 */
 		private int[] rowIndexMapping;
+
+		/**
+		 * Indicates that the first data column in the table is considered a row header.
+		 */
+		private boolean rowHeaders;
 
 		// Action constraints
 		/**
@@ -2146,7 +2224,7 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	 * </p>
 	 * <p>
 	 * Note that Data may be stored locally or sourced remotely, depending on the particular TableModel implementation.
-	 * <p>
+	 * </p>
 	 * <p>
 	 * The row indexes used in the interface are a list of row indexes. Each item in the list is the index of the row
 	 * for that level. The size of the list passed in matches the depth of the row.
@@ -2413,7 +2491,7 @@ public class WTable extends WBeanComponent implements Container, AjaxTarget, Sub
 	 * Intended for internal use only.
 	 * </p>
 	 */
-	public static class RowIdWrapper {
+	public static class RowIdWrapper implements Serializable {
 
 		/**
 		 * The row index.
