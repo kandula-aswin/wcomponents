@@ -1,5 +1,11 @@
 package com.github.bordertech.wcomponents;
 
+import com.github.bordertech.wcomponents.WPanel.PanelModel;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Stack;
 import org.junit.Assert;
@@ -41,5 +47,40 @@ public class ComponentModel_Test extends AbstractWComponentTestCase {
 		copiedStack.add("2");
 		Assert.assertEquals("Original stack was updated incorrectly.", 1, stack.size());
 		Assert.assertEquals("Copied stack was not updated.", 2, copiedStack.size());
+	}
+
+	/**
+	 *
+	 */
+	@Test
+	public void testWriteExternal() {
+		try {
+			WPanel panel = new WPanel();
+			setActiveContext(createUIContext());
+			panel.setLocked(true);
+			panel.setType(WPanel.Type.FEATURE);
+			panel.setBeanProperty("property");
+			PanelModel model = (WPanel.PanelModel)panel.getComponentModel();
+			model.setAttribute("key", "value");
+
+			String filename = "time.ser";
+			FileOutputStream fos = new FileOutputStream(filename);
+			ObjectOutputStream out = new ObjectOutputStream(fos);
+			out.writeObject(model);
+			out.flush();
+			out.close();
+
+			FileInputStream fileInputStream = new FileInputStream(filename);
+			ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+			PanelModel model2 = (WPanel.PanelModel) objectInputStream.readObject();
+			objectInputStream.close();
+			
+			
+			Assert.assertTrue(model.getAttribute("key").equals(model2.getAttribute("key")));
+			Assert.assertTrue(model.getBeanProperty().equals(model2.getBeanProperty()));
+
+		} catch (IOException | ClassNotFoundException e) {
+			Assert.fail(e.getMessage());
+		}
 	}
 }
