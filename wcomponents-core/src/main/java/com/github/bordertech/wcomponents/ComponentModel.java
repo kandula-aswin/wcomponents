@@ -779,7 +779,7 @@ public class ComponentModel implements WebModel, Externalizable {
 			fields = FIELDS_BY_CLASS.get(modelClass);
 
 			if (fields == null) {
-				List fieldList = ReflectionUtil.getAllFields(model, true, true);
+				List fieldList = ReflectionUtil.getAllFields(model, true, false);
 				Collections.sort(fieldList, new FieldComparator());
 
 				fields = (Field[]) fieldList.toArray(new Field[fieldList.size()]);
